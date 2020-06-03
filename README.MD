@@ -62,7 +62,7 @@ managed cluster like EKS, AKS or GKE, this is why we implemented the operator pa
 
 ## Adding or Scaling-Up a Quota
 
-![How Kotary verification process work when you add a claim or request a scale-up](https://i.imgur.com/r0nIXl5.gifv)
+![How Kotary verification process work when you add a claim or request a scale-up](https://i.imgur.com/r0nIXl5.gif)
 
 ## Installation
 
