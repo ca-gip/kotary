@@ -68,7 +68,7 @@ managed cluster like EKS, AKS or GKE, this is why we implemented the operator pa
 
 #### Add the CRD
 ```bash
-kubectl apply -f artifacts/crd.yml
+kubectl apply -f https://raw.githubusercontent.com/ca-gip/kotary/master/artifacts/crd.yml
 ```
 
 #### Configuration
@@ -112,13 +112,13 @@ EOF
 ##### Deploy the controller
 
 ```bash
-kubectl apply -f artifacts/deployment.yml
+kubectl apply -f https://raw.githubusercontent.com/ca-gip/kotary/master/artifacts/deployment.yml
 ```
 
 ##### (Optional) Deploy the service monitor 
 
 ```bash
-kubectl apply -f artifacts/metrics.yml
+kubectl apply -f https://raw.githubusercontent.com/ca-gip/kotary/master/artifacts/metrics.yml
 ```
 
 ## Getting Started
@@ -131,7 +131,8 @@ please refer to the [official documentation](https://kubernetes.io/docs/tasks/ad
 
 #### Example
 
-```yaml
+```bash
+cat <<EOF | kubectl apply -n demo-ns -f -
 apiVersion: ca-gip.github.com/v1
 kind: ResourceQuotaClaim
 metadata:
@@ -139,6 +140,7 @@ metadata:
 spec:
   memory: 20Gi
   cpu: 5
+EOF
 ```
 
 #### Status
