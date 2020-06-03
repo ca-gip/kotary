@@ -62,7 +62,7 @@ managed cluster like EKS, AKS or GKE, this is why we implemented the operator pa
 
 ## Adding or Scaling-Up a Quota
 
-<img src="https://i.imgur.com/i58EGui.gif" alt="How Kotary verification process work when you add a claim or request a scale-up">
+![How Kotary verification process work when you add a claim or request a scale-up](http://i.imgur.com/i58EGui.gif)
 
 ## Installation
 
@@ -178,7 +178,7 @@ managed-quota   2020-01-24T08:31:32Z
 ## Plan
 
 Implementing _ResourceQuota_ when you already have running workload on your cluster can be a tedious task.
-To help you get started you can use ou cli `kotaplan`. It will enable to test various scenarios beforehand
+To help you get started you can use our cli `kotaplan`. It will enable to test various scenarios beforehand
 by simulating how the quota could be implemented according to the desired settings.
 
 Here is a quick example
