@@ -2,7 +2,8 @@
 <p align="center">
   <img height="200px" src="assets/logo.png">
   <br>
-  Managing Kubernetes Quota with confidence
+  <br>
+  <bold>Managing Kubernetes Quota with confidence</bold>
 </p>
 
 # Kotary
