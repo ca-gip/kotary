@@ -1,6 +1,7 @@
 
 <p align="center">
   <img height="200px" src="assets/logo.png">
+  <br>
   Managing Kubernetes Quota with confidence
 </p>
 
