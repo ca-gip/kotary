@@ -1,10 +1,8 @@
 
-
-
-<center><img src="assets/logo.png" height="200px"></center>
-<br />
-
-Managing Quota with confidence
+<p align="center">
+  <img height="200px" src="assets/logo.png">
+  Managing Kubernetes Quota with confidence
+</p>
 
 # Kotary
 
