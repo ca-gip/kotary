@@ -1,7 +1,7 @@
 
 
 
-<center><img src="assets/logo.png"></center>
+<center><img src="assets/logo.png" height="200px"></center>
 <br />
 
 Managing Quota with confidence
