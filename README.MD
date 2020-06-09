@@ -1,7 +1,7 @@
 
 
 
-<center><img src="https://gitlab.com/k8s-paas/resourcequotas-operator/-/raw/master/assets/kotary_logo_full.png?inline=false"></center>
+<center><img src="assets/logo.png"></center>
 <br />
 
 Managing Quota with confidence
