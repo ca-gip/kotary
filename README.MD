@@ -180,7 +180,7 @@ managed-quota   2020-01-24T08:31:32Z
 ## Plan
 
 Implementing _ResourceQuota_ when you already have running workload on your cluster can be a tedious task.
-To help you get started you can use our cli `kotaplan`. It will enable to test various scenarios beforehand
+To help you get started you can use our cli [kotaplan](https://github.com/ca-gip/kotaplan). It will enable to test various scenarios beforehand
 by simulating how the quota could be implemented according to the desired settings.
 
 Here is a quick example
