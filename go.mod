@@ -4,14 +4,16 @@ go 1.14
 
 require (
 	github.com/ahl5esoft/golang-underscore v2.0.0+incompatible
-	github.com/prometheus/client_golang v0.9.2
+	github.com/prometheus/client_golang v1.3.0
 	github.com/storageos/go-api v0.0.0-20180912212459-343b3eff91fc
+	github.com/troian/healthcheck v0.1.3
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v0.17.0
 	k8s.io/code-generator v0.18.0
-	k8s.io/klog v1.0.0
+	k8s.io/klog v1.0.0 // indirect
+	k8s.io/klog/v2 v2.2.0
 	k8s.io/kubernetes v1.15.0
 	sigs.k8s.io/yaml v1.1.0
 )

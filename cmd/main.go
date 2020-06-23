@@ -15,7 +15,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
+
+	"github.com/troian/healthcheck"
 
 	clientset "github.com/ca-gip/kotary/pkg/generated/clientset/versioned"
 	informers "github.com/ca-gip/kotary/pkg/generated/informers/externalversions"
@@ -35,6 +37,14 @@ func main() {
 	klog.InitFlags(nil)
 
 	flag.Parse()
+
+	health := healthcheck.NewHandler()
+	health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(100))
+	health.AddReadinessCheck( "sync-shared-informer", healthcheck. )
+	health.AddReadinessCheck( "claim-worker", )
+	health.AddReadinessCheck( "ns-worker", )
+	go http.ListenAndServe("0.0.0.0:8086", health)
+
 
 	// Load kube config
 	cfg, err := rest.InClusterConfig()

@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	cagipv1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
 	clientset "github.com/ca-gip/kotary/pkg/generated/clientset/versioned"
