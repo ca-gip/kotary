@@ -3,7 +3,7 @@ package utils
 import (
 	v1 "k8s.io/api/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 

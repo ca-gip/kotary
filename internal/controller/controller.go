@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	cagipv1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
 	clientset "github.com/ca-gip/kotary/pkg/generated/clientset/versioned"
@@ -141,6 +141,29 @@ func NewController(
 	})
 
 	return controller
+}
+
+// Check if Shared informer have synced, use for liveness probe
+func (c *Controller) SharedInformersState() error {
+
+	if synced := c.namespacesSynced(); !synced {
+		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "Namespace"))
+	}
+
+	if synced := c.resourceQuotaSynced(); !synced {
+		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "ResourceQuota"))
+	}
+
+	if synced := c.podsSynced(); !synced {
+		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "Pods"))
+	}
+
+	if synced := c.resourceQuotaClaimSynced(); !synced {
+		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "ResourceQuotaClaim"))
+	}
+
+	return nil
+
 }
 
 // Run will set up the event handlers for types we are interested in, as well

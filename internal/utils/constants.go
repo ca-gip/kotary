@@ -3,6 +3,8 @@ package utils
 const (
 	ControllerName = "kotary-controller"
 
+	SharedInformerNotSync = "%s shared informer not synced"
+
 	MessageRejectedMemory = "Not enough Memory claiming %s but %s currently available"
 	MessageRejectedCPU    = "Not enough CPU claiming %s but %s currently available"
 
