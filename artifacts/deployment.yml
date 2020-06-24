@@ -9,18 +9,18 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kotary-role
 rules:
-  - apiGroups: ["ca-gip.github.com"]
-    resources: [ "resourcequotaclaims", "resourcequotaclaims/status"]
+  - apiGroups: [ "ca-gip.github.com" ]
+    resources: [ "resourcequotaclaims", "resourcequotaclaims/status" ]
     verbs: [ "*" ]
-  - apiGroups: [""]
+  - apiGroups: [ "" ]
     resources: [ "resourcequotas" ]
     verbs: [ "*" ]
-  - apiGroups: [""]
-    resources: [ "namespaces", "nodes", "configmaps"]
-    verbs: [ "get", "list", "watch"]
-  - apiGroups: [""]
-    resources: [ "events"]
-    verbs: [ "*"]
+  - apiGroups: [ "" ]
+    resources: [ "namespaces", "nodes", "configmaps" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "events" ]
+    verbs: [ "*" ]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -63,3 +63,14 @@ spec:
                 name: kotary-config
           ports:
             - containerPort: 9080
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 8086
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8086
+            periodSeconds: 5
