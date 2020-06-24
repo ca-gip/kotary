@@ -5,6 +5,7 @@ import (
 	"github.com/ca-gip/kotary/internal/controller"
 	"github.com/ca-gip/kotary/internal/utils"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/troian/healthcheck"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -16,8 +17,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-
-	"github.com/troian/healthcheck"
 
 	clientset "github.com/ca-gip/kotary/pkg/generated/clientset/versioned"
 	informers "github.com/ca-gip/kotary/pkg/generated/informers/externalversions"
@@ -37,14 +36,6 @@ func main() {
 	klog.InitFlags(nil)
 
 	flag.Parse()
-
-	health := healthcheck.NewHandler()
-	health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(100))
-	health.AddReadinessCheck( "sync-shared-informer", healthcheck. )
-	health.AddReadinessCheck( "claim-worker", )
-	health.AddReadinessCheck( "ns-worker", )
-	go http.ListenAndServe("0.0.0.0:8086", health)
-
 
 	// Load kube config
 	cfg, err := rest.InClusterConfig()
@@ -86,6 +77,10 @@ func main() {
 		klog.Fatalf("Error building kubernetes clientset: %s", err.Error())
 	}
 
+	// Prometheus metrics endpoint
+	http.Handle("/metrics", promhttp.Handler())
+	go http.ListenAndServe(":9080", nil)
+
 	// Load config
 	settingsManger := utils.NewSettingManger(settingsClient)
 	settingsManger.Load()
@@ -105,14 +100,18 @@ func main() {
 		podInformerFactory.Core().V1().Pods(),
 		quotaClaimInformerFactory.Cagip().V1().ResourceQuotaClaims())
 
+	// Liveness and Readiness probes
+	health := healthcheck.NewHandler()
+	_ = health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(100))
+	_ = health.AddReadinessCheck("sync-shared-informer", kotaryController.SharedInformersState)
+	go http.ListenAndServe(":8086", health)
+
+	// Start all the informeer
 	namespaceInformerFactory.Start(wait.NeverStop)
 	quotaInformerFactory.Start(wait.NeverStop)
 	nodeInformerFactory.Start(wait.NeverStop)
 	podInformerFactory.Start(wait.NeverStop)
 	quotaClaimInformerFactory.Start(wait.NeverStop)
-
-	http.Handle("/metrics", promhttp.Handler())
-	go http.ListenAndServe(":9080", nil)
 
 	if err = kotaryController.Run(2, wait.NeverStop); err != nil {
 		klog.Fatalf("Error running controller: %s", err.Error())

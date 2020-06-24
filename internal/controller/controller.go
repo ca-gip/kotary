@@ -143,6 +143,29 @@ func NewController(
 	return controller
 }
 
+// Check if Shared informer have synced, use for liveness probe
+func (c *Controller) SharedInformersState() error {
+
+	if synced := c.namespacesSynced(); !synced {
+		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "Namespace"))
+	}
+
+	if synced := c.resourceQuotaSynced(); !synced {
+		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "ResourceQuota"))
+	}
+
+	if synced := c.podsSynced(); !synced {
+		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "Pods"))
+	}
+
+	if synced := c.resourceQuotaClaimSynced(); !synced {
+		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "ResourceQuotaClaim"))
+	}
+
+	return nil
+
+}
+
 // Run will set up the event handlers for types we are interested in, as well
 // as syncing informer caches and starting workers. It will block until stopCh
 // is closed, at which point it will shutdown the resourceQuotaClaimWorkQueue and wait for
