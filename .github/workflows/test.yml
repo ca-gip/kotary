@@ -8,7 +8,7 @@ on:
 
 jobs:
 
-  build:
+  test:
     name: Test
     runs-on: ubuntu-latest
     steps:
@@ -35,5 +35,22 @@ jobs:
       uses: coverallsapp/github-action@v1.0.1
       with:
           github-token: ${{ secrets.github_token }}
-          path-to-lcov: coverage.lcov  
+          path-to-lcov: coverage.lcov
+          
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: Checkout code
+        uses: actions/checkout@v2
 
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: myorg/myrepository
+          tag_with_ref: true
+          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+            
