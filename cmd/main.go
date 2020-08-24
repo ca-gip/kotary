@@ -2,15 +2,15 @@ package main
 
 import (
 	"flag"
-	"github.com/ca-gip/kotary/internal/controller"
-	"github.com/ca-gip/kotary/internal/utils"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/troian/healthcheck"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/ca-gip/kotary/internal/controller"
+	"github.com/ca-gip/kotary/internal/utils"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/troian/healthcheck"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"

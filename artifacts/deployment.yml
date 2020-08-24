@@ -63,3 +63,14 @@ spec:
                 name: kotary-config
           ports:
             - containerPort: 9080
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 8086
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8086
+            periodSeconds: 5
