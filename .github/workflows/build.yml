@@ -4,7 +4,6 @@ on:
   push:
     tags: [ '*' ]
     branches: [ '*' ]
-    branches-ignore: [ master ]
   pull_request:
     branches: [ master ]
   create: [ 'tag' ]
