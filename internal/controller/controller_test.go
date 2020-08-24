@@ -106,7 +106,7 @@ func newTestNodes(number int, spec *v1.ResourceList) (nodes []*v1.Node) {
 	for i := 0; i < number; i++ {
 		nodes = append(nodes, &v1.Node{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "worker-" + string(i),
+				Name: fmt.Sprintf("worker-%d", i),
 			},
 			Spec: v1.NodeSpec{
 				Unschedulable: false,
@@ -128,7 +128,7 @@ func newTestPods(number int, request *v1.ResourceList) (pods []*v1.Pod) {
 	for i := 0; i < number; i++ {
 		pods = append(pods, &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "pod-" + string(i),
+				Name:      fmt.Sprintf("pod-%d", i),
 				Namespace: metav1.NamespaceDefault,
 			},
 			Spec: v1.PodSpec{
