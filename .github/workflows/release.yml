@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Prep Release
+        id: prep
+        run: |
+          cd cli
+          # Parse version
+          VERSION=$(./scripts/get_version.sh)
+          echo "Setting release version to $VERSION"
+          echo "::set-env name=RELEASE_VERSION::$VERSION"
+
+          # Parse changelog
+          CHANGELOG=$(./scripts/parse_changelog.sh)
+          CHANGELOG="${CHANGELOG//'%'/'%25'}"
+          CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+          CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+
+          echo "Got changelog: $CHANGELOG"
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          release_name: Release ${{ env.RELEASE_VERSION }}
+          body: ${{ steps.prep.outputs.changelog }}
+          draft: false
+          prerelease: true
