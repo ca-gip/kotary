@@ -2,9 +2,8 @@ name: Build
 
 on:
   push:
-    tags:
-      - '*'
-    branches: [ * ]
+    tags: [ '*' ]
+    branches: [ '*' ]
     branches-ignore: [ master ]
   pull_request:
     branches: [ master ]
