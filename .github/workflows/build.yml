@@ -6,7 +6,8 @@ on:
     branches: [ '*' ]
   pull_request:
     branches: [ master ]
-  create: [ 'tag' ]
+  create:
+     tags: [ '*' ]
 
 jobs:
 
