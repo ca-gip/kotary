@@ -1,0 +1,14 @@
+---
+kind: ConfigMap
+metadata:
+  name: kotary-config
+  namespace: kube-system
+apiVersion: v1
+data:
+  defaultClaimSpec: |
+    cpu: "2"
+    memory: "10Gi"
+  ratioMaxAllocationMemory: "0.33"
+  ratioMaxAllocationCPU: "0.33"
+  ratioOverCommitMemory: "1.3"
+  ratioOverCommitCPU: "1.3"

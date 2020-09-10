@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kotary
+  namespace: kube-system
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kotary-role
+rules:
+  - apiGroups: [ "ca-gip.github.com" ]
+    resources: [ "resourcequotaclaims", "resourcequotaclaims/status" ]
+    verbs: [ "*" ]
+  - apiGroups: [ "" ]
+    resources: [ "resourcequotas" ]
+    verbs: [ "*" ]
+  - apiGroups: [ "" ]
+    resources: [ "namespaces", "nodes", "configmaps" ]
+    verbs: [ "get", "list", "watch" ]
+  - apiGroups: [ "" ]
+    resources: [ "events" ]
+    verbs: [ "*" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kotary
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kotary-role
+subjects:
+  - kind: ServiceAccount
+    name: kotary
+    namespace: kube-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kotary
+  namespace: kube-system
+  labels:
+    app: kotary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kotary
+  template:
+    metadata:
+      labels:
+        app: kotary
+    spec:
+      serviceAccountName: kotary
+      containers:
+        - name: kotary
+          image: cagip/kotary:v0.2.0
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: kotary-config
+          ports:
+            - containerPort: 9080
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 8086
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8086
+            periodSeconds: 5
