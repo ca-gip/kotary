@@ -34,9 +34,11 @@ spec:
           type: object
           properties:
             cpu:
-              pattern: '([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'
+              type: string
+              pattern: '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'
             memory:
-              pattern: '([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'
+              type: string
+              pattern: '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'
         status:
           type: object
           properties:

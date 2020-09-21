@@ -5,4 +5,4 @@ metadata:
   namespace: native-development
 spec:
   memory: 24Gi
-  cpu: 14000
+  cpu: 14
