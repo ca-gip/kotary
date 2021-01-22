@@ -7,6 +7,7 @@
 </p>
 
 # Kotary
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ca-gip/kotary/Build)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/ca-gip/kotary)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ca-gip/kotary)](https://goreportcard.com/report/github.com/ca-gip/kotary)
 ![Docker Pulls](https://img.shields.io/docker/pulls/cagip/kotary)
