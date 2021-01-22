@@ -16,7 +16,7 @@ rules:
     resources: [ "resourcequotas" ]
     verbs: [ "*" ]
   - apiGroups: [ "" ]
-    resources: [ "namespaces", "nodes", "configmaps" ]
+    resources: [ "namespaces", "nodes", "configmaps", "pods" ]
     verbs: [ "get", "list", "watch" ]
   - apiGroups: [ "" ]
     resources: [ "events" ]
