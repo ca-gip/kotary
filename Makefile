@@ -10,7 +10,7 @@ dependency:
 codegen: dependency
 	bash hack/update-codegen.sh
 
-test: codegen
+test:
 	GOARCH=amd64 go test ./internal/controller -coverprofile coverage.out
 	GOARCH=amd64 go tool cover -func coverage.out
 	GOARCH=amd64 go tool cover -html=coverage.out -o coverage.html
