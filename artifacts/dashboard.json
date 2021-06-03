@@ -1,74 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    },
-    {
-      "name": "VAR_MEMORY_OVERCOMMIT",
-      "type": "constant",
-      "label": "memory_overcommit",
-      "value": "3.0",
-      "description": ""
-    },
-    {
-      "name": "VAR_CPU_OVERCOMMIT",
-      "type": "constant",
-      "label": "cpu_overcommit",
-      "value": "3.0",
-      "description": ""
-    },
-    {
-      "name": "VAR_MEMORY_MAX_NS",
-      "type": "constant",
-      "label": "memory_max_ns",
-      "value": "1.0",
-      "description": ""
-    },
-    {
-      "name": "VAR_CPU_MAX_NS",
-      "type": "constant",
-      "label": "cpu_max_ns",
-      "value": "1.0",
-      "description": ""
-    }
-  ],
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "6.4.3"
-    },
-    {
-      "type": "panel",
-      "id": "graph",
-      "name": "Graph",
-      "version": ""
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "singlestat",
-      "name": "Singlestat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -85,8 +15,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": null,
-  "iteration": 1591177247025,
+  "id": 11,
+  "iteration": 1615564171034,
   "links": [],
   "panels": [
     {
@@ -114,7 +44,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "description": "The overcommit ratio for CPU and Memory to allow more resource to be reserved than whats is actually allocatable",
       "format": "percentunit",
       "gauge": {
@@ -170,7 +100,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "vector($cpu_overcommit)",
+          "expr": "vector($overcommit)",
           "instant": true,
           "refId": "A"
         }
@@ -178,7 +108,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "CPU Overcommit",
+      "title": "Overcommit",
       "type": "singlestat",
       "valueFontSize": "110%",
       "valueMaps": [
@@ -201,7 +131,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "description": "Ratio of the maximum amount of Memory and CPU that can be claimed on a namespace",
       "format": "percentunit",
       "gauge": {
@@ -217,7 +147,7 @@
         "x": 3,
         "y": 1
       },
-      "id": 37,
+      "id": 12,
       "interval": null,
       "links": [],
       "mappingType": 1,
@@ -257,7 +187,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "vector($cpu_max_ns)",
+          "expr": "vector($max_per_ns)",
           "instant": true,
           "refId": "A"
         }
@@ -265,7 +195,7 @@
       "thresholds": "",
       "timeFrom": null,
       "timeShift": null,
-      "title": "Max CPU per NS",
+      "title": "Max Allowed per NS",
       "type": "singlestat",
       "valueFontSize": "110%",
       "valueMaps": [
@@ -286,7 +216,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -341,7 +271,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"}) * $cpu_overcommit",
+          "expr": "sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"})",
           "instant": true,
           "refId": "A"
         }
@@ -370,7 +300,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -453,7 +383,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "format": "none",
       "gauge": {
         "maxValue": 100,
@@ -508,7 +438,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"}) * $cpu_overcommit - sum(kube_resourcequota{type=\"hard\", resource=\"cpu\"})",
+          "expr": "sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"}) * $overcommit - sum(kube_resourcequota{type=\"hard\", resource=\"cpu\"})",
           "instant": true,
           "refId": "A"
         }
@@ -517,272 +447,6 @@
       "timeFrom": null,
       "timeShift": null,
       "title": "CPU  Claimable",
-      "type": "singlestat",
-      "valueFontSize": "110%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 9,
-        "x": 15,
-        "y": 1
-      },
-      "id": 35,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(kube_resourcequota{type=\"hard\", resource=\"cpu\"}) / sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"})",
-          "hide": false,
-          "legendFormat": "CPU",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(kube_resourcequota{type=\"hard\", resource=\"memory\"}) / sum(kube_node_status_allocatable_memory_bytes{node=~\"worker.+\"}) ",
-          "legendFormat": "Memory",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Amount Reserved Resources",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "percentunit",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "decbytes",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": false,
-      "colorPostfix": false,
-      "colorPrefix": false,
-      "colorValue": true,
-      "colors": [
-        "#FF9830",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
-      "description": "The overcommit ratio for CPU and Memory to allow more resource to be reserved than whats is actually allocatable",
-      "format": "percentunit",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 0,
-        "y": 5
-      },
-      "id": 36,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "options": {},
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "vector($memory_overcommit)",
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "thresholds": "",
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Memory Overcommit",
-      "type": "singlestat",
-      "valueFontSize": "110%",
-      "valueMaps": [
-        {
-          "op": "=",
-          "text": "N/A",
-          "value": "null"
-        }
-      ],
-      "valueName": "avg"
-    },
-    {
-      "cacheTimeout": null,
-      "colorBackground": false,
-      "colorPostfix": false,
-      "colorPrefix": false,
-      "colorValue": true,
-      "colors": [
-        "#FF9830",
-        "rgba(237, 129, 40, 0.89)",
-        "#d44a3a"
-      ],
-      "datasource": "${DS_PROMETHEUS}",
-      "description": "Ratio of the maximum amount of Memory and CPU that can be claimed on a namespace",
-      "format": "percentunit",
-      "gauge": {
-        "maxValue": 100,
-        "minValue": 0,
-        "show": false,
-        "thresholdLabels": false,
-        "thresholdMarkers": true
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 3,
-        "y": 5
-      },
-      "id": 12,
-      "interval": null,
-      "links": [],
-      "mappingType": 1,
-      "mappingTypes": [
-        {
-          "name": "value to text",
-          "value": 1
-        },
-        {
-          "name": "range to text",
-          "value": 2
-        }
-      ],
-      "maxDataPoints": 100,
-      "nullPointMode": "connected",
-      "nullText": null,
-      "options": {},
-      "postfix": "",
-      "postfixFontSize": "50%",
-      "prefix": "",
-      "prefixFontSize": "50%",
-      "rangeMaps": [
-        {
-          "from": "null",
-          "text": "N/A",
-          "to": "null"
-        }
-      ],
-      "sparkline": {
-        "fillColor": "rgba(31, 118, 189, 0.18)",
-        "full": false,
-        "lineColor": "rgb(31, 120, 193)",
-        "show": false,
-        "ymax": null,
-        "ymin": null
-      },
-      "tableColumn": "",
-      "targets": [
-        {
-          "expr": "vector($memory_max_ns)",
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "thresholds": "",
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Max Memory per NS",
       "type": "singlestat",
       "valueFontSize": "110%",
       "valueMaps": [
@@ -804,7 +468,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "format": "bytes",
       "gauge": {
         "maxValue": 100,
@@ -816,8 +480,8 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 6,
-        "y": 5
+        "x": 15,
+        "y": 1
       },
       "id": 24,
       "interval": null,
@@ -859,7 +523,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(kube_node_status_allocatable_memory_bytes{node=~\"worker.+\"}) * $memory_overcommit",
+          "expr": "sum(kube_node_status_allocatable_memory_bytes{node=~\"worker.+\"})",
           "instant": true,
           "refId": "A"
         }
@@ -888,7 +552,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "format": "bytes",
       "gauge": {
         "maxValue": 100,
@@ -900,8 +564,8 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 9,
-        "y": 5
+        "x": 18,
+        "y": 1
       },
       "id": 21,
       "interval": null,
@@ -971,7 +635,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "format": "bytes",
       "gauge": {
         "maxValue": 100,
@@ -983,8 +647,8 @@
       "gridPos": {
         "h": 4,
         "w": 3,
-        "x": 12,
-        "y": 5
+        "x": 21,
+        "y": 1
       },
       "id": 26,
       "interval": null,
@@ -1026,7 +690,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(kube_node_status_allocatable_memory_bytes{node=~\"worker.+\"}) * $memory_overcommit - sum(kube_resourcequota{type=\"hard\", resource=\"memory\"})",
+          "expr": "sum(kube_node_status_allocatable_memory_bytes{node=~\"worker.+\"}) * $overcommit - sum(kube_resourcequota{type=\"hard\", resource=\"memory\"})",
           "instant": true,
           "refId": "A"
         }
@@ -1047,13 +711,106 @@
       "valueName": "avg"
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "$Source",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 35,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(kube_resourcequota{type=\"hard\", resource=\"cpu\"}) / sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"})",
+          "hide": false,
+          "legendFormat": "CPU",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(kube_resourcequota{type=\"hard\", resource=\"memory\"}) / sum(kube_node_status_allocatable_memory_bytes{node=~\"worker.+\"}) ",
+          "legendFormat": "Memory",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Amount Reserved Resources",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": null,
+          "format": "percentunit",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "decbytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
       "collapsed": false,
       "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 12
       },
       "id": 28,
       "panels": [],
@@ -1062,28 +819,39 @@
     },
     {
       "columns": [],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
+      "description": "**Use** : Actual resources used by containers in the namespace\n\n**Request** :  Sum of all the requests inside the namespace\n\n**Quota** :  Value of the ResourceQuota\n\n**Request Usage** : Use / Request\n\n**Quota Usage** : Request / Quota ",
       "fontSize": "100%",
       "gridPos": {
-        "h": 10,
+        "h": 12,
         "w": 24,
         "x": 0,
-        "y": 10
+        "y": 13
       },
-      "id": 17,
+      "id": 37,
       "options": {},
       "pageSize": null,
       "showHeader": true,
       "sort": {
-        "col": 1,
+        "col": 6,
         "desc": false
       },
       "styles": [
         {
-          "alias": "Time",
+          "alias": "",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
           "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "mappingType": 1,
           "pattern": "Time",
-          "type": "hidden"
+          "thresholds": [],
+          "type": "hidden",
+          "unit": "short"
         },
         {
           "alias": "CPU Use",
@@ -1094,7 +862,7 @@
             "rgba(50, 172, 45, 0.97)"
           ],
           "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 4,
+          "decimals": 2,
           "mappingType": 1,
           "pattern": "Value #A",
           "thresholds": [],
@@ -1102,7 +870,7 @@
           "unit": "short"
         },
         {
-          "alias": "CPU Reserved",
+          "alias": "CPU Request",
           "colorMode": null,
           "colors": [
             "rgba(245, 54, 54, 0.9)",
@@ -1110,7 +878,7 @@
             "rgba(50, 172, 45, 0.97)"
           ],
           "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 4,
+          "decimals": 2,
           "mappingType": 1,
           "pattern": "Value #B",
           "thresholds": [],
@@ -1118,7 +886,7 @@
           "unit": "short"
         },
         {
-          "alias": "Memory Use",
+          "alias": "CPU Quota",
           "colorMode": null,
           "colors": [
             "rgba(245, 54, 54, 0.9)",
@@ -1131,10 +899,10 @@
           "pattern": "Value #C",
           "thresholds": [],
           "type": "number",
-          "unit": "bytes"
+          "unit": "short"
         },
         {
-          "alias": "Memory Reserved",
+          "alias": "CPU Request Usage",
           "colorMode": null,
           "colors": [
             "rgba(245, 54, 54, 0.9)",
@@ -1145,22 +913,6 @@
           "decimals": 2,
           "mappingType": 1,
           "pattern": "Value #D",
-          "thresholds": [],
-          "type": "number",
-          "unit": "bytes"
-        },
-        {
-          "alias": "CPU Usage",
-          "colorMode": "value",
-          "colors": [
-            "rgba(50, 172, 45, 0.97)",
-            "rgba(237, 129, 40, 0.89)",
-            "rgba(245, 54, 54, 0.9)"
-          ],
-          "dateFormat": "YYYY-MM-DD HH:mm:ss",
-          "decimals": 2,
-          "mappingType": 1,
-          "pattern": "Value #F",
           "thresholds": [
             "0.5",
             "0.8"
@@ -1169,8 +921,8 @@
           "unit": "percentunit"
         },
         {
-          "alias": "Memory Usage",
-          "colorMode": "value",
+          "alias": "CPU Quota Usage",
+          "colorMode": null,
           "colors": [
             "rgba(50, 172, 45, 0.97)",
             "rgba(237, 129, 40, 0.89)",
@@ -1184,6 +936,86 @@
             "0.5",
             "0.8"
           ],
+          "type": "number",
+          "unit": "percentunit"
+        },
+        {
+          "alias": "Memory Use",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "mappingType": 1,
+          "pattern": "Value #F",
+          "thresholds": [],
+          "type": "number",
+          "unit": "bytes"
+        },
+        {
+          "alias": "Memory Request",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "mappingType": 1,
+          "pattern": "Value #G",
+          "thresholds": [],
+          "type": "number",
+          "unit": "bytes"
+        },
+        {
+          "alias": "Memory Quota",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "mappingType": 1,
+          "pattern": "Value #H",
+          "thresholds": [],
+          "type": "number",
+          "unit": "bytes"
+        },
+        {
+          "alias": "Memory Request Usage",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "mappingType": 1,
+          "pattern": "Value #I",
+          "thresholds": [],
+          "type": "number",
+          "unit": "percentunit"
+        },
+        {
+          "alias": "Memory Quota Usage",
+          "colorMode": null,
+          "colors": [
+            "rgba(245, 54, 54, 0.9)",
+            "rgba(237, 129, 40, 0.89)",
+            "rgba(50, 172, 45, 0.97)"
+          ],
+          "dateFormat": "YYYY-MM-DD HH:mm:ss",
+          "decimals": 2,
+          "mappingType": 1,
+          "pattern": "Value #J",
+          "thresholds": [],
           "type": "number",
           "unit": "percentunit"
         },
@@ -1204,45 +1036,72 @@
       ],
       "targets": [
         {
-          "expr": "sum by (namespace) (kube_resourcequota{type=\"used\", resource=\"cpu\"}) / sum by (namespace) (kube_resourcequota{type=\"hard\", resource=\"cpu\"})",
+          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{container!=\"POD\",image!=\"\",job=\"kubelet\",namespace!~\"kube-system|opa|monitoring|kubernetes-dashboard|ingress-nginx|argocd|default|kube-compliance|s3operator|velero\"}[10m]))",
           "format": "table",
+          "hide": false,
           "instant": true,
-          "refId": "F"
+          "refId": "A"
         },
         {
           "expr": "sum by (namespace) (kube_resourcequota{type=\"used\", resource=\"cpu\"})",
           "format": "table",
+          "hide": false,
           "instant": true,
-          "refId": "A"
+          "refId": "B"
         },
         {
           "expr": "sum by (namespace) (kube_resourcequota{type=\"hard\", resource=\"cpu\"})",
           "format": "table",
           "instant": true,
-          "refId": "B"
+          "legendFormat": "",
+          "refId": "C"
         },
         {
-          "expr": "sum by (namespace) (kube_resourcequota{type=\"used\", resource=\"memory\"}) / sum by (namespace) (kube_resourcequota{type=\"hard\", resource=\"memory\"})",
+          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{container!=\"POD\",image!=\"\",job=\"kubelet\", namespace!~\"kube-system|opa|monitoring|kubernetes-dashboard|ingress-nginx|argocd|default|kube-compliance|s3operator|velero\"}[10m])) / sum by (namespace) (kube_resourcequota{type=\"used\", resource=\"cpu\"}) ",
+          "format": "table",
+          "instant": true,
+          "refId": "D"
+        },
+        {
+          "expr": "sum by (namespace) (kube_resourcequota{type=\"used\", resource=\"cpu\"}) / sum by (namespace) (kube_resourcequota{type=\"hard\", resource=\"cpu\"} > 0)",
           "format": "table",
           "instant": true,
           "refId": "E"
         },
         {
+          "expr": "sum by (namespace) (container_memory_usage_bytes{container!=\"POD\",image!=\"\",job=\"kubelet\",namespace!~\"kube-system|opa|monitoring|kubernetes-dashboard|ingress-nginx|argocd|default|kube-compliance|s3operator|velero\"})",
+          "format": "table",
+          "instant": true,
+          "refId": "F"
+        },
+        {
           "expr": "sum by (namespace) (kube_resourcequota{type=\"used\", resource=\"memory\"})",
           "format": "table",
           "instant": true,
-          "refId": "C"
+          "refId": "G"
         },
         {
           "expr": "sum by (namespace) (kube_resourcequota{type=\"hard\", resource=\"memory\"})",
           "format": "table",
           "instant": true,
-          "refId": "D"
+          "refId": "H"
+        },
+        {
+          "expr": "sum by (namespace) (container_memory_usage_bytes{container!=\"POD\",image!=\"\",job=\"kubelet\",namespace!~\"kube-system|opa|monitoring|kubernetes-dashboard|ingress-nginx|argocd|default|kube-compliance|s3operator|velero\"}) / sum by (namespace) (kube_resourcequota{type=\"used\", resource=\"memory\"} )",
+          "format": "table",
+          "instant": true,
+          "refId": "I"
+        },
+        {
+          "expr": "sum by (namespace) (kube_resourcequota{type=\"used\", resource=\"memory\"}) / sum by (namespace) (kube_resourcequota{type=\"hard\", resource=\"memory\"} > 0)",
+          "format": "table",
+          "instant": true,
+          "refId": "J"
         }
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Managed Quota",
+      "title": "Managed Namespace Resources",
       "transform": "table",
       "type": "table"
     },
@@ -1253,7 +1112,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 25
       },
       "id": 32,
       "panels": [],
@@ -1269,7 +1128,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "description": "",
       "format": "bytes",
       "gauge": {
@@ -1283,7 +1142,7 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 21
+        "y": 26
       },
       "id": 33,
       "interval": null,
@@ -1350,14 +1209,14 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 21,
         "x": 3,
-        "y": 21
+        "y": 26
       },
       "id": 2,
       "legend": {
@@ -1467,7 +1326,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "description": "The maximum amount of Memory that can be claimed on the namespace",
       "format": "bytes",
       "gauge": {
@@ -1481,10 +1340,10 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 25
+        "y": 30
       },
       "id": 8,
-      "interval": null,
+      "interval": "",
       "links": [],
       "mappingType": 1,
       "mappingTypes": [
@@ -1523,7 +1382,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(kube_node_status_allocatable_memory_bytes{node=~\"worker.+\"}) * $memory_overcommit - sum(kube_resourcequota{type=\"hard\", resource=\"memory\"}) < :node_memory_MemAvailable_bytes:sum * $memory_max_ns or :node_memory_MemAvailable_bytes:sum * $memory_max_ns",
+          "expr": "sum(kube_node_status_allocatable_memory_bytes{node=~\"worker.+\"}) * $overcommit - sum(kube_resourcequota{type=\"hard\", resource=\"memory\"}) < :node_memory_MemAvailable_bytes:sum * $max_per_ns or :node_memory_MemAvailable_bytes:sum * $max_per_ns",
           "refId": "C"
         }
       ],
@@ -1551,7 +1410,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "description": "The maximum amount of CPU that can be claimed on the namespace",
       "format": "none",
       "gauge": {
@@ -1565,7 +1424,7 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 29
+        "y": 34
       },
       "id": 34,
       "interval": null,
@@ -1632,14 +1491,14 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 21,
         "x": 3,
-        "y": 29
+        "y": 34
       },
       "id": 4,
       "legend": {
@@ -1690,7 +1549,7 @@
           "refId": "B"
         },
         {
-          "expr": "sum (rate(container_cpu_usage_seconds_total{container!=\"POD\",image!=\"\",job=\"kubelet\", namespace=\"$namespace\"}[30s])) * 100\n",
+          "expr": "sum (rate(container_cpu_usage_seconds_total{container!=\"POD\",image!=\"\",job=\"kubelet\", namespace=\"$namespace\"}[30s]))",
           "legendFormat": "Usage",
           "refId": "C"
         }
@@ -1745,7 +1604,7 @@
         "rgba(237, 129, 40, 0.89)",
         "#d44a3a"
       ],
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": "$Source",
       "description": "The maximum amount of CPU that can be claimed on the namespace",
       "format": "none",
       "gauge": {
@@ -1759,7 +1618,7 @@
         "h": 4,
         "w": 3,
         "x": 0,
-        "y": 33
+        "y": 38
       },
       "id": 11,
       "interval": null,
@@ -1801,7 +1660,8 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"}) * $cpu_overcommit - sum(kube_resourcequota{type=\"hard\", resource=\"cpu\"})  < sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"}) * $cpu_max_ns - sum(kube_resourcequota{type=\"hard\", resource=\"cpu\"}) or sum(machine_cpu_cores{node=~\"worker.*\"}) * $cpu_max_ns ",
+          "expr": "sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"}) * $overcommit - sum(kube_resourcequota{type=\"hard\", resource=\"cpu\"}) < sum(kube_node_status_allocatable_cpu_cores{node=~\"worker.+\"}) * $max_per_ns - sum(kube_resourcequota{type=\"hard\", resource=\"cpu\"}) or sum(machine_cpu_cores{node=~\"worker.*\"}) * $max_per_ns",
+          "instant": false,
           "refId": "B"
         }
       ],
@@ -1828,9 +1688,29 @@
   "templating": {
     "list": [
       {
+        "current": {
+          "text": "prometheus",
+          "value": "prometheus"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Prometheus",
+        "multi": false,
+        "name": "Source",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
         "allValue": null,
-        "current": {},
-        "datasource": "${DS_PROMETHEUS}",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "datasource": "$Source",
         "definition": "label_values(kube_namespace_labels, label_name)",
         "hide": 0,
         "includeAll": false,
@@ -1851,80 +1731,46 @@
       },
       {
         "current": {
-          "value": "${VAR_MEMORY_OVERCOMMIT}",
-          "text": "${VAR_MEMORY_OVERCOMMIT}"
+          "text": "0.95",
+          "value": "0.95"
         },
         "hide": 2,
         "label": null,
-        "name": "memory_overcommit",
+        "name": "overcommit",
         "options": [
           {
-            "value": "${VAR_MEMORY_OVERCOMMIT}",
-            "text": "${VAR_MEMORY_OVERCOMMIT}"
+            "selected": true,
+            "text": "0.95",
+            "value": "0.95"
           }
         ],
-        "query": "${VAR_MEMORY_OVERCOMMIT}",
+        "query": "0.95",
         "skipUrlSync": false,
         "type": "constant"
       },
       {
         "current": {
-          "value": "${VAR_CPU_OVERCOMMIT}",
-          "text": "${VAR_CPU_OVERCOMMIT}"
+          "text": "0.33",
+          "value": "0.33"
         },
         "hide": 2,
         "label": null,
-        "name": "cpu_overcommit",
+        "name": "max_per_ns",
         "options": [
           {
-            "value": "${VAR_CPU_OVERCOMMIT}",
-            "text": "${VAR_CPU_OVERCOMMIT}"
+            "selected": true,
+            "text": "0.33",
+            "value": "0.33"
           }
         ],
-        "query": "${VAR_CPU_OVERCOMMIT}",
-        "skipUrlSync": false,
-        "type": "constant"
-      },
-      {
-        "current": {
-          "value": "${VAR_MEMORY_MAX_NS}",
-          "text": "${VAR_MEMORY_MAX_NS}"
-        },
-        "hide": 2,
-        "label": null,
-        "name": "memory_max_ns",
-        "options": [
-          {
-            "value": "${VAR_MEMORY_MAX_NS}",
-            "text": "${VAR_MEMORY_MAX_NS}"
-          }
-        ],
-        "query": "${VAR_MEMORY_MAX_NS}",
-        "skipUrlSync": false,
-        "type": "constant"
-      },
-      {
-        "current": {
-          "value": "${VAR_CPU_MAX_NS}",
-          "text": "${VAR_CPU_MAX_NS}"
-        },
-        "hide": 2,
-        "label": null,
-        "name": "cpu_max_ns",
-        "options": [
-          {
-            "value": "${VAR_CPU_MAX_NS}",
-            "text": "${VAR_CPU_MAX_NS}"
-          }
-        ],
-        "query": "${VAR_CPU_MAX_NS}",
+        "query": "0.33",
         "skipUrlSync": false,
         "type": "constant"
       }
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {
@@ -1942,7 +1788,7 @@
     ]
   },
   "timezone": "",
-  "title": "Kotary",
+  "title": "ResourceQuota",
   "uid": "gYpH6R8Za",
-  "version": 5
+  "version": 1
 }
