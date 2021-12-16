@@ -246,3 +246,12 @@ what the specifications of the quota, the total amount of request made by contai
 
 ![grafana_namespace_details](assets/grafana_namespace_details.png)
 
+
+ <hr/>
+<p align=center  style="background-color:#333333 !important;">
+  <a href="https://www.jetbrains.com/">
+  Developed with
+  <br/>
+  <img align="center" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="drawing" width="100"/>
+  </a>
+</p>
