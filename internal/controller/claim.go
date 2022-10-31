@@ -49,6 +49,9 @@ func (c *Controller) syncHandlerClaim(key string) error {
 	} else if !errors.IsNotFound(err) {
 		// List pod in the claim ns
 		pods, err := c.podsLister.Pods(claim.Namespace).List(utils.DefaultLabelSelector())
+
+		utils.FilterPods(pods) // Keep only Running and Pending Pods
+
 		if err != nil {
 			return err
 		}
