@@ -2,15 +2,16 @@ package controller
 
 import (
 	"fmt"
+	"reflect"
+	"testing"
+	"time"
+
 	"gotest.tools/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/quota/v1"
-	"reflect"
-	"testing"
-	"time"
 
 	"github.com/ca-gip/kotary/internal/utils"
 	cagipv1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
@@ -124,7 +125,7 @@ func newTestNodes(number int, spec *v1.ResourceList) (nodes []*v1.Node) {
 	return
 }
 
-func newTestPods(number int, request *v1.ResourceList) (pods []*v1.Pod) {
+func newTestPods(number int, request *v1.ResourceList, phase *v1.PodStatus) (pods []*v1.Pod) {
 	for i := 0; i < number; i++ {
 		pods = append(pods, &v1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -140,6 +141,29 @@ func newTestPods(number int, request *v1.ResourceList) (pods []*v1.Pod) {
 					},
 				},
 			},
+			Status: *phase.DeepCopy(),
+		})
+	}
+	return
+}
+
+func newTestPodsStopped(number int, request *v1.ResourceList, phase *v1.PodStatus) (pods []*v1.Pod) {
+	for i := 0; i < number; i++ {
+		pods = append(pods, &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("pod-stopped-%d", i),
+				Namespace: metav1.NamespaceDefault,
+			},
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Resources: v1.ResourceRequirements{
+							Requests: request.DeepCopy(),
+						},
+					},
+				},
+			},
+			Status: *phase.DeepCopy(),
 		})
 	}
 	return
@@ -804,7 +828,7 @@ func TestClaimUpdateQuota(t *testing.T) {
 }
 
 func TestClaimPending(t *testing.T) {
-	t.Run("1 Node 16Gi 4CPU - Claim 5Gi 600m - Request 6Gi 750m - Should be Pending Memory", func(t *testing.T) {
+	t.Run("1 Node 16Gi 4CPU - Claim 5Gi 600m - Request 8Gi 750m - Should be Pending Memory", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
 		f.nodeLister = newTestNodes(1, &v1.ResourceList{
@@ -820,17 +844,35 @@ func TestClaimPending(t *testing.T) {
 			Spec: v1.ResourceQuotaSpec{
 				Hard: v1.ResourceList{
 					v1.ResourceCPU:    resource.MustParse("800m"),
-					v1.ResourceMemory: resource.MustParse("6Gi"),
+					v1.ResourceMemory: resource.MustParse("8Gi"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
 		f.rqobjects = append(f.rqcobjects, managedQuota)
+
 		// Scheduled Pods
-		pods := newTestPods(3, &v1.ResourceList{
+		pods := newTestPods(4, &v1.ResourceList{
 			v1.ResourceCPU:    resource.MustParse("250m"),
 			v1.ResourceMemory: resource.MustParse("2Gi"),
+		}, &v1.PodStatus{
+			Phase: "Running",
 		})
+		// Scheduled Pods that should be filtered out, because they are not in "Running or Pending" state
+		stoppedPods := newTestPods(5, &v1.ResourceList{
+			v1.ResourceCPU:    resource.MustParse("250m"),
+			v1.ResourceMemory: resource.MustParse("2Gi"),
+		}, &v1.PodStatus{
+			Phase: "Stopped",
+		})
+
+		for _, stoppedPod := range stoppedPods {
+			pods = append(pods, stoppedPod)
+		}
+
+		// Keep only pods in "Running or Pending" state
+		pods = utils.FilterPods(pods)
+
 		f.podLister = pods
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
@@ -841,7 +883,7 @@ func TestClaimPending(t *testing.T) {
 		f.rqcobjects = append(f.rqcobjects, claim)
 		// Expected Status
 		claim.Status.Phase = cagipv1.PhasePending
-		claim.Status.Details = "Awaiting lower Memory consumption claiming 5Gi but current total of request is 6Gi"
+		claim.Status.Details = "Awaiting lower Memory consumption claiming 5Gi but current total of request is 8Gi"
 		f.expectUpdateStatusResourceQuotaClaimAction(claim)
 
 		f.runClaim(getClaimKey(claim, t))
@@ -873,6 +915,8 @@ func TestClaimPending(t *testing.T) {
 		pods := newTestPods(3, &v1.ResourceList{
 			v1.ResourceCPU:    resource.MustParse("250m"),
 			v1.ResourceMemory: resource.MustParse("2Gi"),
+		}, &v1.PodStatus{
+			Phase: "Running",
 		})
 		f.podLister = pods
 		// Test against claim

@@ -33,3 +33,13 @@ func FilterWorkerNode() corelisters.NodeConditionPredicate {
 		return true
 	}
 }
+
+func FilterPods(pods []*v1.Pod) []*v1.Pod {
+	var filteredPods []*v1.Pod
+	for _, pod := range pods {
+		if pod.Status.Phase == "Running" || pod.Status.Phase == "Pending" {
+			filteredPods = append(filteredPods, pod)
+		}
+	}
+	return filteredPods
+}
