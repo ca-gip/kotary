@@ -6,7 +6,6 @@ on:
 
 jobs:
   release:
-    needs: test
     name: Create Release
     runs-on: ubuntu-latest
     steps:
