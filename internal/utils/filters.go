@@ -37,7 +37,7 @@ func FilterWorkerNode() corelisters.NodeConditionPredicate {
 func FilterPods(pods []*v1.Pod) []*v1.Pod {
 	var filteredPods []*v1.Pod
 	for _, pod := range pods {
-		if pod.Status.Phase == "Running" || pod.Status.Phase == "Pending" {
+		if pod.Status.Phase == "Running" {
 			filteredPods = append(filteredPods, pod)
 		}
 	}
