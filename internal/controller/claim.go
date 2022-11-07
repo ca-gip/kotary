@@ -50,7 +50,7 @@ func (c *Controller) syncHandlerClaim(key string) error {
 		// List pod in the claim ns
 		pods, err := c.podsLister.Pods(claim.Namespace).List(utils.DefaultLabelSelector())
 
-		utils.FilterPods(pods) // Keep only Running and Pending Pods
+		pods = utils.FilterPods(pods) // Keep only Running Pods
 
 		if err != nil {
 			return err
