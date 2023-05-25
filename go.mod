@@ -6,6 +6,7 @@ require (
 	github.com/ahl5esoft/golang-underscore v2.0.0+incompatible
 	github.com/prometheus/client_golang v1.3.0
 	github.com/storageos/go-api v0.0.0-20180912212459-343b3eff91fc
+	github.com/stretchr/testify v1.8.3
 	github.com/troian/healthcheck v0.1.3
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.17.0
