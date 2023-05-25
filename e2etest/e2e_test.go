@@ -1,7 +1,7 @@
 package e2etest
 
 import (
-	
+	"os"
 	"path/filepath"
 	"testing"
 	"github.com/stretchr/testify/assert"
@@ -14,8 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-const testnamespace="native-development"
-
+ 
 
 func NewVersionedClientSet(kubeconfig string) (*versioned.Clientset, error) {
 	if kubeconfig == "" {
@@ -34,7 +33,7 @@ func NewVersionedClientSet(kubeconfig string) (*versioned.Clientset, error) {
 
 // check e2etest ResourceQuotaClaim
 func TestCreateQuotaClaim(t *testing.T) {
-	
+	testnamespace := os.Getenv("TESTNAMESPACE")
 	clientsetVersioned, err := NewVersionedClientSet("")
 	if err != nil {
 		panic(err)
@@ -53,7 +52,7 @@ func TestCreateQuotaClaim(t *testing.T) {
 }
 // check e2etest ResourceQuotaClaim
 func TestGetQuotaClaim(t *testing.T) {
-	
+	testnamespace := os.Getenv("TESTNAMESPACE")
 	clientsetVersioned, err := NewVersionedClientSet("")
 	if err != nil {
 		panic(err)
@@ -67,7 +66,7 @@ func TestGetQuotaClaim(t *testing.T) {
 
 //  Check Update ResourceQuotaClaim
 func TestUpddateQuotaClaim(t *testing.T) {
-
+	testnamespace := os.Getenv("TESTNAMESPACE")
 	clientsetVersioned, err := NewVersionedClientSet("")
 	if err != nil {
 		panic(err)
