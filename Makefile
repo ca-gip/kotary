@@ -16,4 +16,4 @@ test:
 	GOARCH=amd64 go tool cover -html=coverage.out -o coverage.html
 
 build:
-	GOOS=linux CGO_ENABLED=0 GOARCH=amd64 go build -a -ldflags '-extldflags "-static"' -v -o ./build/$(IMAGE) -i $(GOPATH)/src/$(REPO)/cmd/main.go
+	GOOS=linux CGO_ENABLED=0 GOARCH=amd64 go build -a -ldflags '-extldflags "-static"' -v -o ./build/$(IMAGE) $(GOPATH)/src/$(REPO)/cmd/main.go
