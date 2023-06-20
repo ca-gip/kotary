@@ -16,29 +16,30 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
-- [What is it ?](#what-is-it-)
-- [Why not use an admission controller ?](#why-not-use-an-admission-controller-)
-- [Adding or Scaling-Up a Quota](#adding-or-scaling-up-a-quota)
-- [Installation](#installation)
-    - [Add the CRD](#add-the-crd)
-    - [Configuration](#configuration)
-      - [Options](#options)
-      - [Example](#example)
-    - [Deployment](#deployment)
-      - [Deploy the controller](#deploy-the-controller)
-      - [(Optional) Deploy the service monitor](#optional-deploy-the-service-monitor)
-- [Getting Started](#getting-started)
-  - [Update a ResourceQuota](#update-a-resourcequota)
-    - [Example](#example-1)
-    - [Status](#status)
-      - [Example of a rejected claim](#example-of-a-rejected-claim)
-      - [Example of a pending claim](#example-of-a-pending-claim)
-  - [Default claim](#default-claim)
-- [Plan](#plan)
-- [Manage](#manage)
-  - [Global](#global)
-  - [Namespaces](#namespaces)
-  - [Namespace Details](#namespace-details)
+- [Kotary](#kotary)
+  - [What is it ?](#what-is-it-)
+  - [Why not use an admission controller ?](#why-not-use-an-admission-controller-)
+  - [Adding or Scaling-Up a Quota](#adding-or-scaling-up-a-quota)
+  - [Installation](#installation)
+      - [Add the CRD](#add-the-crd)
+      - [Configuration](#configuration)
+        - [Options](#options)
+        - [Example](#example)
+      - [Deployment](#deployment)
+        - [Deploy the controller](#deploy-the-controller)
+        - [(Optional) Deploy the service monitor](#optional-deploy-the-service-monitor)
+  - [Getting Started](#getting-started)
+    - [Update a ResourceQuota](#update-a-resourcequota)
+      - [Example](#example-1)
+      - [Status](#status)
+        - [Example of a rejected claim](#example-of-a-rejected-claim)
+        - [Example of a pending claim](#example-of-a-pending-claim)
+    - [Default claim](#default-claim)
+  - [Plan](#plan)
+  - [Manage](#manage)
+    - [Global](#global)
+    - [Namespaces](#namespaces)
+    - [Namespace Details](#namespace-details)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -137,7 +138,7 @@ please refer to the [official documentation](https://kubernetes.io/docs/tasks/ad
 
 ```bash
 cat <<EOF | kubectl apply -n demo-ns -f -
-apiVersion: ca-gip.github.com/v1
+apiVersion: cagip.github.com/v1
 kind: ResourceQuotaClaim
 metadata:
   name: demo
