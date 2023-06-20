@@ -75,6 +75,7 @@ require (
 
 // Dépendances indirectes, on doit spéficier la version car certains packages Kubernetes l'importes en version v0.0.0 ...
 replace (
+	k8s.io/api => k8s.io/api v0.24.13
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.24.13
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.24.13
 )
