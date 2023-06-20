@@ -4,8 +4,8 @@ package fake
 
 import (
 	clientset "github.com/ca-gip/kotary/pkg/generated/clientset/versioned"
-	cagipv1 "github.com/ca-gip/kotary/pkg/generated/clientset/versioned/typed/ca-gip/v1"
-	fakecagipv1 "github.com/ca-gip/kotary/pkg/generated/clientset/versioned/typed/ca-gip/v1/fake"
+	cagipv1 "github.com/ca-gip/kotary/pkg/generated/clientset/versioned/typed/cagip/v1"
+	fakecagipv1 "github.com/ca-gip/kotary/pkg/generated/clientset/versioned/typed/cagip/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -58,7 +58,10 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
 // CagipV1 retrieves the CagipV1Client
 func (c *Clientset) CagipV1() cagipv1.CagipV1Interface {

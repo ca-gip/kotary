@@ -1,14 +1,15 @@
 package controller
 
 import (
+	"testing"
+
 	"github.com/ca-gip/kotary/internal/utils"
-	cagipv1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
+	cagipv1 "github.com/ca-gip/kotary/pkg/apis/cagip/v1"
 	"github.com/storageos/go-api/types"
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestApplyOverProvisioning(t *testing.T) {
@@ -854,7 +855,7 @@ func TestDeleteResourceQuotaClaim(t *testing.T) {
 
 		resultErr := c.deleteResourceQuotaClaim(claim)
 
-		assert.Error(t, resultErr, "resourcequotaclaims.ca-gip.github.com \"test\" not found")
+		assert.Error(t, resultErr, "resourcequotaclaims.cagip.github.com \"test\" not found")
 
 	})
 

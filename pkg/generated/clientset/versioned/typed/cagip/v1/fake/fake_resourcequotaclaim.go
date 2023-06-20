@@ -3,7 +3,9 @@
 package fake
 
 import (
-	cagipv1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
+	"context"
+
+	cagipv1 "github.com/ca-gip/kotary/pkg/apis/cagip/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -18,12 +20,12 @@ type FakeResourceQuotaClaims struct {
 	ns   string
 }
 
-var resourcequotaclaimsResource = schema.GroupVersionResource{Group: "ca-gip.github.com", Version: "v1", Resource: "resourcequotaclaims"}
+var resourcequotaclaimsResource = schema.GroupVersionResource{Group: "cagip.github.com", Version: "v1", Resource: "resourcequotaclaims"}
 
-var resourcequotaclaimsKind = schema.GroupVersionKind{Group: "ca-gip.github.com", Version: "v1", Kind: "ResourceQuotaClaim"}
+var resourcequotaclaimsKind = schema.GroupVersionKind{Group: "cagip.github.com", Version: "v1", Kind: "ResourceQuotaClaim"}
 
 // Get takes name of the resourceQuotaClaim, and returns the corresponding resourceQuotaClaim object, and an error if there is any.
-func (c *FakeResourceQuotaClaims) Get(name string, options v1.GetOptions) (result *cagipv1.ResourceQuotaClaim, err error) {
+func (c *FakeResourceQuotaClaims) Get(ctx context.Context, name string, options v1.GetOptions) (result *cagipv1.ResourceQuotaClaim, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(resourcequotaclaimsResource, c.ns, name), &cagipv1.ResourceQuotaClaim{})
 
@@ -34,7 +36,7 @@ func (c *FakeResourceQuotaClaims) Get(name string, options v1.GetOptions) (resul
 }
 
 // List takes label and field selectors, and returns the list of ResourceQuotaClaims that match those selectors.
-func (c *FakeResourceQuotaClaims) List(opts v1.ListOptions) (result *cagipv1.ResourceQuotaClaimList, err error) {
+func (c *FakeResourceQuotaClaims) List(ctx context.Context, opts v1.ListOptions) (result *cagipv1.ResourceQuotaClaimList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(resourcequotaclaimsResource, resourcequotaclaimsKind, c.ns, opts), &cagipv1.ResourceQuotaClaimList{})
 
@@ -56,14 +58,14 @@ func (c *FakeResourceQuotaClaims) List(opts v1.ListOptions) (result *cagipv1.Res
 }
 
 // Watch returns a watch.Interface that watches the requested resourceQuotaClaims.
-func (c *FakeResourceQuotaClaims) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeResourceQuotaClaims) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(resourcequotaclaimsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a resourceQuotaClaim and creates it.  Returns the server's representation of the resourceQuotaClaim, and an error, if there is any.
-func (c *FakeResourceQuotaClaims) Create(resourceQuotaClaim *cagipv1.ResourceQuotaClaim) (result *cagipv1.ResourceQuotaClaim, err error) {
+func (c *FakeResourceQuotaClaims) Create(ctx context.Context, resourceQuotaClaim *cagipv1.ResourceQuotaClaim, opts v1.CreateOptions) (result *cagipv1.ResourceQuotaClaim, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(resourcequotaclaimsResource, c.ns, resourceQuotaClaim), &cagipv1.ResourceQuotaClaim{})
 
@@ -74,7 +76,7 @@ func (c *FakeResourceQuotaClaims) Create(resourceQuotaClaim *cagipv1.ResourceQuo
 }
 
 // Update takes the representation of a resourceQuotaClaim and updates it. Returns the server's representation of the resourceQuotaClaim, and an error, if there is any.
-func (c *FakeResourceQuotaClaims) Update(resourceQuotaClaim *cagipv1.ResourceQuotaClaim) (result *cagipv1.ResourceQuotaClaim, err error) {
+func (c *FakeResourceQuotaClaims) Update(ctx context.Context, resourceQuotaClaim *cagipv1.ResourceQuotaClaim, opts v1.UpdateOptions) (result *cagipv1.ResourceQuotaClaim, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(resourcequotaclaimsResource, c.ns, resourceQuotaClaim), &cagipv1.ResourceQuotaClaim{})
 
@@ -86,7 +88,7 @@ func (c *FakeResourceQuotaClaims) Update(resourceQuotaClaim *cagipv1.ResourceQuo
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeResourceQuotaClaims) UpdateStatus(resourceQuotaClaim *cagipv1.ResourceQuotaClaim) (*cagipv1.ResourceQuotaClaim, error) {
+func (c *FakeResourceQuotaClaims) UpdateStatus(ctx context.Context, resourceQuotaClaim *cagipv1.ResourceQuotaClaim, opts v1.UpdateOptions) (*cagipv1.ResourceQuotaClaim, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(resourcequotaclaimsResource, "status", c.ns, resourceQuotaClaim), &cagipv1.ResourceQuotaClaim{})
 
@@ -97,23 +99,23 @@ func (c *FakeResourceQuotaClaims) UpdateStatus(resourceQuotaClaim *cagipv1.Resou
 }
 
 // Delete takes name of the resourceQuotaClaim and deletes it. Returns an error if one occurs.
-func (c *FakeResourceQuotaClaims) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeResourceQuotaClaims) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(resourcequotaclaimsResource, c.ns, name), &cagipv1.ResourceQuotaClaim{})
+		Invokes(testing.NewDeleteActionWithOptions(resourcequotaclaimsResource, c.ns, name, opts), &cagipv1.ResourceQuotaClaim{})
 
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeResourceQuotaClaims) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(resourcequotaclaimsResource, c.ns, listOptions)
+func (c *FakeResourceQuotaClaims) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(resourcequotaclaimsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &cagipv1.ResourceQuotaClaimList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched resourceQuotaClaim.
-func (c *FakeResourceQuotaClaims) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *cagipv1.ResourceQuotaClaim, err error) {
+func (c *FakeResourceQuotaClaims) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *cagipv1.ResourceQuotaClaim, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(resourcequotaclaimsResource, c.ns, name, pt, data, subresources...), &cagipv1.ResourceQuotaClaim{})
 

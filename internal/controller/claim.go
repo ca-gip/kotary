@@ -1,18 +1,20 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"math"
 
 	"github.com/ca-gip/kotary/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/labels"
+	quota "k8s.io/apiserver/pkg/quota/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
-	"k8s.io/kubernetes/pkg/quota/v1"
 
-	cagipv1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
-	v1 "k8s.io/api/core/v1"
+	cagipv1 "github.com/ca-gip/kotary/pkg/apis/cagip/v1"
+	v1Core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
@@ -50,7 +52,7 @@ func (c *Controller) syncHandlerClaim(key string) error {
 		// List pod in the claim ns
 		pods, err := c.podsLister.Pods(claim.Namespace).List(utils.DefaultLabelSelector())
 
-		pods = utils.FilterPods(pods) // Keep only Running Pods
+		pods = utils.FilterRunningPods(pods) // Keep only Running Pods
 
 		if err != nil {
 			return err
@@ -128,7 +130,7 @@ func (c *Controller) updateResourceQuotaClaimStatus(claim *cagipv1.ResourceQuota
 	// we must use UpdateStatus instead of Update to update the Status block.
 	// UpdateStatus will not allow changes to the Spec of the resource,
 	// which is ideal for ensuring nothing other than resource status has been updated.
-	_, err = c.resourcequotaclaimclientset.CagipV1().ResourceQuotaClaims(claim.Namespace).UpdateStatus(claimCopy)
+	_, err = c.resourcequotaclaimclientset.CagipV1().ResourceQuotaClaims(claim.Namespace).UpdateStatus(context.TODO(), claimCopy, metav1.UpdateOptions{})
 
 	// Checking we were able to update the Status, will enable requeue if it's not the case
 	if err != nil {
@@ -145,7 +147,7 @@ func (c *Controller) updateResourceQuotaClaimStatus(claim *cagipv1.ResourceQuota
 // Update claim phase to Rejected with a msg
 func (c *Controller) claimRejected(claim *cagipv1.ResourceQuotaClaim, msg string) (err error) {
 	// Notify via an event
-	c.recorder.Event(claim, v1.EventTypeWarning, cagipv1.PhaseRejected, msg)
+	c.recorder.Event(claim, v1Core.EventTypeWarning, cagipv1.PhaseRejected, msg)
 	// Update ResourceQuotaClaim Status to Rejected Phase
 	_, err = c.updateResourceQuotaClaimStatus(claim, cagipv1.PhaseRejected, msg)
 	utils.ClaimCounter.WithLabelValues("rejected").Inc()
@@ -155,7 +157,7 @@ func (c *Controller) claimRejected(claim *cagipv1.ResourceQuotaClaim, msg string
 // Update claim phase to Pending with a msg
 func (c *Controller) claimPending(claim *cagipv1.ResourceQuotaClaim, msg string) (err error) {
 	// Notify via an event
-	c.recorder.Event(claim, v1.EventTypeWarning, cagipv1.PhasePending, msg)
+	c.recorder.Event(claim, v1Core.EventTypeWarning, cagipv1.PhasePending, msg)
 	// Update ResourceQuotaClaim Status to Rejected Phase
 	_, err = c.updateResourceQuotaClaimStatus(claim, cagipv1.PhasePending, msg)
 	utils.ClaimCounter.WithLabelValues("pending").Inc()
@@ -170,7 +172,7 @@ func (c *Controller) updateResourceQuota(claim *cagipv1.ResourceQuotaClaim) erro
 	// If the resource doesn't exist, we create it
 	if errors.IsNotFound(err) {
 		klog.V(4).Infof("No existing ResourceQuota for ns %s", claim.Namespace)
-		resourceQuota, err = c.resourcequotaclientset.CoreV1().ResourceQuotas(claim.Namespace).Create(newResourceQuota(claim))
+		resourceQuota, err = c.resourcequotaclientset.CoreV1().ResourceQuotas(claim.Namespace).Create(context.TODO(), newResourceQuota(claim), metav1.CreateOptions{})
 
 		// If an error occurs during Create, the item is requeue
 		if err != nil {
@@ -180,7 +182,7 @@ func (c *Controller) updateResourceQuota(claim *cagipv1.ResourceQuotaClaim) erro
 	} else if !quota.Equals(resourceQuota.Status.Hard, claim.Spec) {
 		// If this spec of the ResourceQuota is not the desired one we update it
 		klog.V(4).Infof("ResourceQuota not synced, updating for ns %s", claim.Namespace)
-		_, err := c.resourcequotaclientset.CoreV1().ResourceQuotas(claim.Namespace).Update(newResourceQuota(claim))
+		_, err := c.resourcequotaclientset.CoreV1().ResourceQuotas(claim.Namespace).Update(context.TODO(), newResourceQuota(claim), metav1.UpdateOptions{})
 		if err != nil {
 			klog.Errorf("Could not update ResourceQuotas for ns %s ", claim.Annotations)
 			// If an error occurs during Create, the item is requeue
@@ -188,17 +190,17 @@ func (c *Controller) updateResourceQuota(claim *cagipv1.ResourceQuotaClaim) erro
 		}
 	}
 
-	return nil
+	return err
 }
 
 // Apply over provisioning on a resource list
-func (c *Controller) applyOverProvisioning(current *v1.ResourceList) (overProvisioned *v1.ResourceList) {
-	return &v1.ResourceList{
-		v1.ResourceCPU: *resource.NewMilliQuantity(
-			int64(math.Round(float64(current.Cpu().Copy().MilliValue())*c.settings.RatioOverCommitCPU)),
+func (c *Controller) applyOverProvisioning(current *v1Core.ResourceList) (overProvisioned *v1Core.ResourceList) {
+	return &v1Core.ResourceList{
+		v1Core.ResourceCPU: *resource.NewMilliQuantity(
+			int64(math.Round(float64(current.Cpu().MilliValue())*c.settings.RatioOverCommitCPU)),
 			resource.DecimalSI),
-		v1.ResourceMemory: *resource.NewQuantity(
-			int64(math.Round(float64(current.Memory().Copy().Value())*c.settings.RatioOverCommitMemory)),
+		v1Core.ResourceMemory: *resource.NewQuantity(
+			int64(math.Round(float64(current.Memory().Value())*c.settings.RatioOverCommitMemory)),
 			resource.BinarySI),
 	}
 }
@@ -206,13 +208,13 @@ func (c *Controller) applyOverProvisioning(current *v1.ResourceList) (overProvis
 // Check if a claim is under the allocation limit
 // If it doesn't comply return an error msg
 // Otherwise return an empty msg
-func (c *Controller) checkAllocationLimit(claim *cagipv1.ResourceQuotaClaim, availableResources *v1.ResourceList) string {
+func (c *Controller) checkAllocationLimit(claim *cagipv1.ResourceQuotaClaim, availableResources *v1Core.ResourceList) string {
 
-	allocationLimit := &v1.ResourceList{
-		v1.ResourceMemory: *resource.NewQuantity(
+	allocationLimit := &v1Core.ResourceList{
+		v1Core.ResourceMemory: *resource.NewQuantity(
 			int64(math.Round(float64(availableResources.Memory().Value())*c.settings.RatioMaxAllocationMemory)),
 			resource.BinarySI),
-		v1.ResourceCPU: *resource.NewMilliQuantity(
+		v1Core.ResourceCPU: *resource.NewMilliQuantity(
 			int64(math.Round(float64(availableResources.Cpu().MilliValue())*c.settings.RatioMaxAllocationCPU)),
 			resource.DecimalSI),
 	}
@@ -233,7 +235,7 @@ func (c *Controller) checkAllocationLimit(claim *cagipv1.ResourceQuotaClaim, ava
 }
 
 // Check that they are enough resources to fit the claim
-func (c *Controller) checkResourceFit(claim *cagipv1.ResourceQuotaClaim, availableResources *v1.ResourceList, reservedResources *v1.ResourceList) string {
+func (c *Controller) checkResourceFit(claim *cagipv1.ResourceQuotaClaim, availableResources *v1Core.ResourceList, reservedResources *v1Core.ResourceList) string {
 
 	// Apply OverProvisioning
 	overCommittedResources := c.applyOverProvisioning(availableResources)
@@ -263,27 +265,32 @@ func (c *Controller) checkResourceFit(claim *cagipv1.ResourceQuotaClaim, availab
 }
 
 // Gather the nodes total capacity
-func (c *Controller) nodesTotalCapacity() (total *v1.ResourceList, err error) {
+func (c *Controller) nodesTotalCapacity() (total *v1Core.ResourceList, err error) {
+
 	// Get worker Nodes
-	if workerNodes, err := c.nodeLister.ListWithPredicate(utils.FilterWorkerNode()); err != nil {
+	nodeList, err := c.nodeLister.List(labels.Everything())
+	if err != nil {
 		klog.Errorf("Could not retrieve Nodes : %s", err)
 		return total, err
-	} else {
-		// Only keep CPU and Memory
-		total = &v1.ResourceList{
-			v1.ResourceCPU:    *resource.NewMilliQuantity(utils.NodesCpuAllocatable(workerNodes), resource.DecimalSI),
-			v1.ResourceMemory: *resource.NewQuantity(utils.NodesMemAllocatable(workerNodes), resource.BinarySI),
-		}
-
-		klog.Infof("Found %d Worker Nodes : %s Memory %s CPU", len(workerNodes), total.Memory().String(), total.Cpu().String())
-
-		return total, err
 	}
+
+	workerNodes := utils.FilterNodesWithPredicate(nodeList, utils.FilterWorkerNode())
+
+	// Only keep CPU and Memory
+	total = &v1Core.ResourceList{
+		v1Core.ResourceCPU:    *resource.NewMilliQuantity(utils.NodesCpuAllocatable(workerNodes), resource.DecimalSI),
+		v1Core.ResourceMemory: *resource.NewQuantity(utils.NodesMemAllocatable(workerNodes), resource.BinarySI),
+	}
+
+	klog.Infof("Found %d Worker Nodes : %s Memory %s CPU", len(workerNodes), total.Memory().String(), total.Cpu().String())
+
+	return total, err
+
 }
 
 // Gather the total of resource quota except the one on the namespace being evaluated
-func (c *Controller) totalResourceQuota(claim *cagipv1.ResourceQuotaClaim) (sumResourceQuota *v1.ResourceList, err error) {
-	sumResourceQuota = &v1.ResourceList{}
+func (c *Controller) totalResourceQuota(claim *cagipv1.ResourceQuotaClaim) (sumResourceQuota *v1Core.ResourceList, err error) {
+	sumResourceQuota = &v1Core.ResourceList{}
 	// Retrieve ResourceQuotas
 	if resourceQuotasAllNS, err := c.resourceQuotaLister.List(utils.DefaultLabelSelector()); err != nil {
 		klog.Errorf("Could not retrieve ResourceQuotas : %s", err)
@@ -308,7 +315,7 @@ func (c *Controller) totalResourceQuota(claim *cagipv1.ResourceQuotaClaim) (sumR
 }
 
 // Check is the managed quota is scaling down
-func isDownscaleQuota(claim *cagipv1.ResourceQuotaClaim, managedQuota *v1.ResourceQuota) bool {
+func isDownscaleQuota(claim *cagipv1.ResourceQuotaClaim, managedQuota *v1Core.ResourceQuota) bool {
 	return claim.Spec.Cpu().MilliValue() < managedQuota.Spec.Hard.Cpu().MilliValue() ||
 		claim.Spec.Memory().Value() < managedQuota.Spec.Hard.Memory().Value()
 }
@@ -316,7 +323,7 @@ func isDownscaleQuota(claim *cagipv1.ResourceQuotaClaim, managedQuota *v1.Resour
 // Check that it is possible to scale down the quota
 // Return an empty message if possible else
 // Return the reason
-func canDownscaleQuota(claim *cagipv1.ResourceQuotaClaim, totalRequest *v1.ResourceList) string {
+func canDownscaleQuota(claim *cagipv1.ResourceQuotaClaim, totalRequest *v1Core.ResourceList) string {
 	if totalRequest.Memory().Value() > claim.Spec.Memory().Value() {
 		return fmt.Sprintf(
 			utils.MessagePendingMemoryDownscale,
@@ -337,22 +344,22 @@ func canDownscaleQuota(claim *cagipv1.ResourceQuotaClaim, totalRequest *v1.Resou
 
 // Delete a ResourceQuotaClaims
 func (c *Controller) deleteResourceQuotaClaim(claim *cagipv1.ResourceQuotaClaim) (err error) {
-	return c.resourcequotaclaimclientset.CagipV1().ResourceQuotaClaims(claim.Namespace).Delete(claim.Name, utils.DefaultDeleteOptions())
+	return c.resourcequotaclaimclientset.CagipV1().ResourceQuotaClaims(claim.Namespace).Delete(context.TODO(), claim.Name, metav1.DeleteOptions{})
 }
 
 // Create a ResourceQuota from a ResourceQuotaClaim resource.
-func newResourceQuota(claim *cagipv1.ResourceQuotaClaim) *v1.ResourceQuota {
+func newResourceQuota(claim *cagipv1.ResourceQuotaClaim) *v1Core.ResourceQuota {
 	labels := map[string]string{
 		"creator": utils.ControllerName,
 	}
-	return &v1.ResourceQuota{
+	return &v1Core.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      utils.ResourceQuotaName,
 			Namespace: claim.Namespace,
 			Labels:    labels,
 		},
-		Spec: v1.ResourceQuotaSpec{
-			Hard: quota.Add(v1.ResourceList{}, claim.Spec),
+		Spec: v1Core.ResourceQuotaSpec{
+			Hard: quota.Add(v1Core.ResourceList{}, claim.Spec),
 		},
 	}
 }

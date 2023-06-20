@@ -3,7 +3,7 @@
 package cagip
 
 import (
-	v1 "github.com/ca-gip/kotary/pkg/generated/informers/externalversions/ca-gip/v1"
+	v1 "github.com/ca-gip/kotary/pkg/generated/informers/externalversions/cagip/v1"
 	internalinterfaces "github.com/ca-gip/kotary/pkg/generated/informers/externalversions/internalinterfaces"
 )
 

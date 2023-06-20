@@ -1,13 +1,14 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/ca-gip/kotary/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
 
-	cagipv1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
+	cagipv1 "github.com/ca-gip/kotary/pkg/apis/cagip/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -47,7 +48,7 @@ func (c *Controller) syncHandlerNS(key string) error {
 	// We create a default claim to add one
 	if !resourceQuotaExist && !claimWithoutStatusExist {
 		klog.V(4).Infof("No Default ResourceQuota for ns %s", ns.Name)
-		_, err = c.resourcequotaclaimclientset.CagipV1().ResourceQuotaClaims(ns.Name).Create(c.newDefaultResourceQuotaClaim(ns.Name))
+		_, err = c.resourcequotaclaimclientset.CagipV1().ResourceQuotaClaims(ns.Name).Create(context.TODO(), c.newDefaultResourceQuotaClaim(ns.Name), metav1.CreateOptions{})
 
 		// Just in case if the ResourceQuotaClaim already resourceQuotaExist we skip it
 		if errors.IsAlreadyExists(err) {

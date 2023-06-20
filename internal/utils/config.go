@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"io/ioutil"
 	"strings"
 
@@ -117,8 +118,7 @@ func findExecutionNamespace() (namespace string, err error) {
 
 // Load the configmap
 func (c ConfigurationManager) loadConfigMap(namespace string) (configMap *v1.ConfigMap, err error) {
-
-	configMap, err = c.clientset.CoreV1().ConfigMaps(namespace).Get(configMapName, metav1.GetOptions{})
+	configMap, err = c.clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), configMapName, metav1.GetOptions{})
 
 	if err != nil {
 		return configMap, err

@@ -5,7 +5,7 @@ package externalversions
 import (
 	"fmt"
 
-	v1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
+	v1 "github.com/ca-gip/kotary/pkg/apis/cagip/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
