@@ -2,7 +2,7 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: resourcequotaclaims.ca-gip.github.com
+  name: resourcequotaclaims.cagip.github.com
 spec:
   group: cagip.github.com
   versions:
@@ -23,8 +23,10 @@ spec:
               type: object
               properties:
                 cpu:
+                  x-kubernetes-int-or-string: true
                   pattern: '([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'
                 memory:
+                  x-kubernetes-int-or-string: true
                   pattern: '([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'
             status:
               type: object
@@ -33,6 +35,8 @@ spec:
                   type: string
                 details:
                   type: string
+      subresources:
+        status: {}
       additionalPrinterColumns:
         - name: CPU
           type: string
