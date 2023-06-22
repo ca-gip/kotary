@@ -40,6 +40,7 @@
     - [Global](#global)
     - [Namespaces](#namespaces)
     - [Namespace Details](#namespace-details)
+  - [Versioning](#versioning)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -256,3 +257,8 @@ what the specifications of the quota, the total amount of request made by contai
   <img align="center" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="drawing" width="100"/>
   </a>
 </p>
+
+## Versioning 
+
+Since version v0.24.0, we have decided to modify the naming of versions for ease of reading and understanding.
+Example: v0.24.0 means that the operator was developed for Kubernetes version 1.24 and that the last 0 corresponds to the various patches we have made to the operator.
