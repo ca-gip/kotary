@@ -260,5 +260,5 @@ what the specifications of the quota, the total amount of request made by contai
 
 ## Versioning 
 
-Since version v0.24.0, we have decided to modify the naming of versions for ease of reading and understanding.
-Example: v0.24.0 means that the operator was developed for Kubernetes version 1.24 and that the last 0 corresponds to the various patches we have made to the operator.
+Since version v1.24.0, we have decided to modify the naming of versions for ease of reading and understanding.
+Example: v1.24.0 means that the operator was developed for Kubernetes version 1.24 and that the last 0 corresponds to the various patches we have made to the operator.
