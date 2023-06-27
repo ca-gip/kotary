@@ -5,7 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	cagip "github.com/ca-gip/kotary/pkg/apis/ca-gip"
+	cagip "github.com/ca-gip/kotary/pkg/apis/cagip"
 )
 
 // SchemeGroupVersion is group version used to register these objects

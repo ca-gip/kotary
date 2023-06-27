@@ -3,15 +3,17 @@
 package v1
 
 import (
-	v1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
+	v1 "github.com/ca-gip/kotary/pkg/apis/cagip/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 )
 
 // ResourceQuotaClaimLister helps list ResourceQuotaClaims.
+// All objects returned here must be treated as read-only.
 type ResourceQuotaClaimLister interface {
 	// List lists all ResourceQuotaClaims in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.ResourceQuotaClaim, err error)
 	// ResourceQuotaClaims returns an object that can list and get ResourceQuotaClaims.
 	ResourceQuotaClaims(namespace string) ResourceQuotaClaimNamespaceLister
@@ -42,10 +44,13 @@ func (s *resourceQuotaClaimLister) ResourceQuotaClaims(namespace string) Resourc
 }
 
 // ResourceQuotaClaimNamespaceLister helps list and get ResourceQuotaClaims.
+// All objects returned here must be treated as read-only.
 type ResourceQuotaClaimNamespaceLister interface {
 	// List lists all ResourceQuotaClaims in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.ResourceQuotaClaim, err error)
 	// Get retrieves the ResourceQuotaClaim from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.ResourceQuotaClaim, error)
 	ResourceQuotaClaimNamespaceListerExpansion
 }

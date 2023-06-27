@@ -9,7 +9,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: kotary-role
 rules:
-  - apiGroups: [ "ca-gip.github.com" ]
+  - apiGroups: [ "cagip.github.com" ]
     resources: [ "resourcequotaclaims", "resourcequotaclaims/status" ]
     verbs: [ "*" ]
   - apiGroups: [ "" ]
@@ -56,7 +56,7 @@ spec:
       serviceAccountName: kotary
       containers:
         - name: kotary
-          image: cagip/kotary:v0.2.0
+          image: cagip/kotary:v0.24.0
           imagePullPolicy: Always
           envFrom:
             - configMapRef:

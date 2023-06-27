@@ -1,12 +1,13 @@
 package controller
 
 import (
-	cagipv1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
-	"gotest.tools/assert"
+	"testing"
+
+	cagipv1 "github.com/ca-gip/kotary/pkg/apis/cagip/v1"
+	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestNewDefaultResourceQuotaClaim(t *testing.T) {

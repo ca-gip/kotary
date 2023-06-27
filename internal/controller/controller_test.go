@@ -1,23 +1,24 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
 	"time"
 
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	quota "k8s.io/apiserver/pkg/quota/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/quota/v1"
 
 	"github.com/ca-gip/kotary/internal/utils"
-	cagipv1 "github.com/ca-gip/kotary/pkg/apis/ca-gip/v1"
+	cagipv1 "github.com/ca-gip/kotary/pkg/apis/cagip/v1"
 	"github.com/ca-gip/kotary/pkg/generated/clientset/versioned/fake"
 	informers "github.com/ca-gip/kotary/pkg/generated/informers/externalversions"
-	v1 "k8s.io/api/core/v1"
+	v1Core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/diff"
@@ -45,10 +46,10 @@ type fixture struct {
 	podsclientset               *k8sfake.Clientset
 	resourcequotaclaimclientset *fake.Clientset
 	// Objects to put in the store.
-	namespaceLister          []*v1.Namespace
-	resourceQuotaLister      []*v1.ResourceQuota
-	nodeLister               []*v1.Node
-	podLister                []*v1.Pod
+	namespaceLister          []*v1Core.Namespace
+	resourceQuotaLister      []*v1Core.ResourceQuota
+	nodeLister               []*v1Core.Node
+	podLister                []*v1Core.Pod
 	resourceQuotaClaimLister []*cagipv1.ResourceQuotaClaim
 	// Actions expected to happen on the client.
 	kubeactions []core.Action
@@ -80,18 +81,18 @@ func newFixture(t *testing.T) *fixture {
 	return f
 }
 
-func newTestResourceQuotaClaim(name string, spec *v1.ResourceList) *cagipv1.ResourceQuotaClaim {
+func newTestResourceQuotaClaim(name string, spec *v1Core.ResourceList) *cagipv1.ResourceQuotaClaim {
 	return &cagipv1.ResourceQuotaClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: metav1.NamespaceDefault,
 		},
-		Spec: quota.Add(v1.ResourceList{}, spec.DeepCopy()),
+		Spec: quota.Add(v1Core.ResourceList{}, spec.DeepCopy()),
 	}
 }
 
-func newTestResourceQuota(namespace string, name string, spec *v1.ResourceList) *v1.ResourceQuota {
-	return &v1.ResourceQuota{
+func newTestResourceQuota(namespace string, name string, spec *v1Core.ResourceList) *v1Core.ResourceQuota {
+	return &v1Core.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
@@ -99,25 +100,25 @@ func newTestResourceQuota(namespace string, name string, spec *v1.ResourceList) 
 				"creator": utils.ControllerName,
 			},
 		},
-		Spec: v1.ResourceQuotaSpec{Hard: *spec},
+		Spec: v1Core.ResourceQuotaSpec{Hard: *spec},
 	}
 }
 
-func newTestNodes(number int, spec *v1.ResourceList) (nodes []*v1.Node) {
+func newTestNodes(number int, spec *v1Core.ResourceList) (nodes []*v1Core.Node) {
 	for i := 0; i < number; i++ {
-		nodes = append(nodes, &v1.Node{
+		nodes = append(nodes, &v1Core.Node{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: fmt.Sprintf("worker-%d", i),
 			},
-			Spec: v1.NodeSpec{
+			Spec: v1Core.NodeSpec{
 				Unschedulable: false,
 			},
-			Status: v1.NodeStatus{
+			Status: v1Core.NodeStatus{
 				Capacity:    spec.DeepCopy(),
 				Allocatable: spec.DeepCopy(),
-				Conditions: []v1.NodeCondition{{
-					Type:   v1.NodeReady,
-					Status: v1.ConditionTrue,
+				Conditions: []v1Core.NodeCondition{{
+					Type:   v1Core.NodeReady,
+					Status: v1Core.ConditionTrue,
 				}},
 			},
 		})
@@ -125,17 +126,17 @@ func newTestNodes(number int, spec *v1.ResourceList) (nodes []*v1.Node) {
 	return
 }
 
-func newTestPods(number int, request *v1.ResourceList, phase *v1.PodStatus) (pods []*v1.Pod) {
+func newTestPods(number int, request *v1Core.ResourceList, phase *v1Core.PodStatus) (pods []*v1Core.Pod) {
 	for i := 0; i < number; i++ {
-		pods = append(pods, &v1.Pod{
+		pods = append(pods, &v1Core.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("pod-%d", i),
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1.PodSpec{
-				Containers: []v1.Container{
+			Spec: v1Core.PodSpec{
+				Containers: []v1Core.Container{
 					{
-						Resources: v1.ResourceRequirements{
+						Resources: v1Core.ResourceRequirements{
 							Requests: request.DeepCopy(),
 						},
 					},
@@ -147,17 +148,17 @@ func newTestPods(number int, request *v1.ResourceList, phase *v1.PodStatus) (pod
 	return
 }
 
-func newTestPodsStopped(number int, request *v1.ResourceList, phase *v1.PodStatus) (pods []*v1.Pod) {
+func newTestPodsStopped(number int, request *v1Core.ResourceList, phase *v1Core.PodStatus) (pods []*v1Core.Pod) {
 	for i := 0; i < number; i++ {
-		pods = append(pods, &v1.Pod{
+		pods = append(pods, &v1Core.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("pod-stopped-%d", i),
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1.PodSpec{
-				Containers: []v1.Container{
+			Spec: v1Core.PodSpec{
+				Containers: []v1Core.Container{
 					{
-						Resources: v1.ResourceRequirements{
+						Resources: v1Core.ResourceRequirements{
 							Requests: request.DeepCopy(),
 						},
 					},
@@ -178,9 +179,9 @@ func (f *fixture) newController() (*Controller, kubeinformers.SharedInformerFact
 	f.resourcequotaclaimclientset = fake.NewSimpleClientset(f.rqcobjects...)
 
 	f.settings = utils.Config{
-		DefaultClaimSpec: v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("2"),
-			v1.ResourceMemory: resource.MustParse("6Gi"),
+		DefaultClaimSpec: v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("2"),
+			v1Core.ResourceMemory: resource.MustParse("6Gi"),
 		},
 		RatioMaxAllocationMemory: 0.33,
 		RatioMaxAllocationCPU:    0.33,
@@ -467,11 +468,11 @@ func filterInformerActions(actions []core.Action) []core.Action {
 	return ret
 }
 
-func (f *fixture) expectCreateResourceQuotaAction(quota *v1.ResourceQuota) {
+func (f *fixture) expectCreateResourceQuotaAction(quota *v1Core.ResourceQuota) {
 	f.kubeactions = append(f.kubeactions, core.NewCreateAction(schema.GroupVersionResource{Resource: "resourcequotas"}, quota.Namespace, quota))
 }
 
-func (f *fixture) expectUpdateResourceQuotaAction(quota *v1.ResourceQuota) {
+func (f *fixture) expectUpdateResourceQuotaAction(quota *v1Core.ResourceQuota) {
 	f.kubeactions = append(f.kubeactions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "resourcequotas"}, quota.Namespace, quota))
 }
 
@@ -490,7 +491,7 @@ func (f *fixture) expectUpdateStatusResourceQuotaClaimAction(rqc *cagipv1.Resour
 }
 
 func (f *fixture) expectClaimStatus(t *testing.T, claim *cagipv1.ResourceQuotaClaim, details string) {
-	updatedClaim, err := f.resourcequotaclaimclientset.CagipV1().ResourceQuotaClaims(claim.Namespace).Get(claim.Namespace, metav1.GetOptions{})
+	updatedClaim, err := f.resourcequotaclaimclientset.CagipV1().ResourceQuotaClaims(claim.Namespace).Get(context.TODO(), claim.Namespace, metav1.GetOptions{})
 	assert.NilError(t, err)
 	assert.Equal(t, updatedClaim.Status.Details, details)
 }
@@ -504,7 +505,7 @@ func getClaimKey(rqc *cagipv1.ResourceQuotaClaim, t *testing.T) string {
 	return key
 }
 
-func getNSKey(ns *v1.Namespace, t *testing.T) string {
+func getNSKey(ns *v1Core.Namespace, t *testing.T) string {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(ns)
 	if err != nil {
 		t.Errorf("Unexpected error getting key for ns %v: %v", ns.Name, err)
@@ -518,14 +519,14 @@ func TestClaimCreateNewQuota(t *testing.T) {
 	t.Run("1 Node 8Gi 1CPU - Claim 2Gi 300m", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("300m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("300m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -540,14 +541,14 @@ func TestClaimCreateNewQuota(t *testing.T) {
 	t.Run("3 Node 8Gi 1CPU - Claim 7Gi 900m", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(3, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(3, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("900m"),
-			v1.ResourceMemory: resource.MustParse("7Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("900m"),
+			v1Core.ResourceMemory: resource.MustParse("7Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -562,14 +563,14 @@ func TestClaimCreateNewQuota(t *testing.T) {
 	t.Run("9 Node 8Gi 1CPU - Claim 20Gi 2.5CPU", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(9, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(9, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("2.5"),
-			v1.ResourceMemory: resource.MustParse("20Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("2.5"),
+			v1Core.ResourceMemory: resource.MustParse("20Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -584,14 +585,14 @@ func TestClaimCreateNewQuota(t *testing.T) {
 	t.Run("error while creating quota should requeue", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("300m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("300m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -608,14 +609,14 @@ func TestClaimCreateNewQuota(t *testing.T) {
 	t.Run("error while deleting claim should requeue", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("300m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("300m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -637,29 +638,29 @@ func TestClaimUpdateQuota(t *testing.T) {
 	t.Run("1 Node 8Gi 1CPU - Claim 2Gi 300m", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Existing Quota
-		managedQuota := &v1.ResourceQuota{
+		managedQuota := &v1Core.ResourceQuota{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      utils.ResourceQuotaName,
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1.ResourceQuotaSpec{
-				Hard: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("200m"),
-					v1.ResourceMemory: resource.MustParse("1Gi"),
+			Spec: v1Core.ResourceQuotaSpec{
+				Hard: v1Core.ResourceList{
+					v1Core.ResourceCPU:    resource.MustParse("200m"),
+					v1Core.ResourceMemory: resource.MustParse("1Gi"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
 		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("300m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("300m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -675,29 +676,29 @@ func TestClaimUpdateQuota(t *testing.T) {
 	t.Run("3 Node 8Gi 1CPU - Claim 7Gi 900m", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(3, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(3, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Existing Quota
-		managedQuota := &v1.ResourceQuota{
+		managedQuota := &v1Core.ResourceQuota{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      utils.ResourceQuotaName,
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1.ResourceQuotaSpec{
-				Hard: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("200m"),
-					v1.ResourceMemory: resource.MustParse("1Gi"),
+			Spec: v1Core.ResourceQuotaSpec{
+				Hard: v1Core.ResourceList{
+					v1Core.ResourceCPU:    resource.MustParse("200m"),
+					v1Core.ResourceMemory: resource.MustParse("1Gi"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
 		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("900m"),
-			v1.ResourceMemory: resource.MustParse("7Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("900m"),
+			v1Core.ResourceMemory: resource.MustParse("7Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -712,29 +713,29 @@ func TestClaimUpdateQuota(t *testing.T) {
 	t.Run("9 Node 8Gi 1CPU - Claim 20Gi 2.5CPU", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(9, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(9, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Existing Quota
-		managedQuota := &v1.ResourceQuota{
+		managedQuota := &v1Core.ResourceQuota{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      utils.ResourceQuotaName,
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1.ResourceQuotaSpec{
-				Hard: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("200m"),
-					v1.ResourceMemory: resource.MustParse("1Gi"),
+			Spec: v1Core.ResourceQuotaSpec{
+				Hard: v1Core.ResourceList{
+					v1Core.ResourceCPU:    resource.MustParse("200m"),
+					v1Core.ResourceMemory: resource.MustParse("1Gi"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
 		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("2.5"),
-			v1.ResourceMemory: resource.MustParse("20Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("2.5"),
+			v1Core.ResourceMemory: resource.MustParse("20Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -749,29 +750,29 @@ func TestClaimUpdateQuota(t *testing.T) {
 	t.Run("error while updating quota should requeue", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Existing Quota
-		managedQuota := &v1.ResourceQuota{
+		managedQuota := &v1Core.ResourceQuota{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      utils.ResourceQuotaName,
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1.ResourceQuotaSpec{
-				Hard: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("200m"),
-					v1.ResourceMemory: resource.MustParse("1Gi"),
+			Spec: v1Core.ResourceQuotaSpec{
+				Hard: v1Core.ResourceList{
+					v1Core.ResourceCPU:    resource.MustParse("200m"),
+					v1Core.ResourceMemory: resource.MustParse("1Gi"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
 		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("300m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("300m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -788,29 +789,29 @@ func TestClaimUpdateQuota(t *testing.T) {
 	t.Run("error while deleting claim should requeue", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Existing Quota
-		managedQuota := &v1.ResourceQuota{
+		managedQuota := &v1Core.ResourceQuota{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      utils.ResourceQuotaName,
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1.ResourceQuotaSpec{
-				Hard: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("200m"),
-					v1.ResourceMemory: resource.MustParse("1Gi"),
+			Spec: v1Core.ResourceQuotaSpec{
+				Hard: v1Core.ResourceList{
+					v1Core.ResourceCPU:    resource.MustParse("200m"),
+					v1Core.ResourceMemory: resource.MustParse("1Gi"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
 		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("300m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("300m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -831,20 +832,20 @@ func TestClaimPending(t *testing.T) {
 	t.Run("1 Node 16Gi 4CPU - Claim 5Gi 600m - Request 8Gi 750m - Should be Pending Memory", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("4"),
-			v1.ResourceMemory: resource.MustParse("16Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("4"),
+			v1Core.ResourceMemory: resource.MustParse("16Gi"),
 		})
 		// Existing Quota
-		managedQuota := &v1.ResourceQuota{
+		managedQuota := &v1Core.ResourceQuota{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      utils.ResourceQuotaName,
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1.ResourceQuotaSpec{
-				Hard: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("800m"),
-					v1.ResourceMemory: resource.MustParse("8Gi"),
+			Spec: v1Core.ResourceQuotaSpec{
+				Hard: v1Core.ResourceList{
+					v1Core.ResourceCPU:    resource.MustParse("800m"),
+					v1Core.ResourceMemory: resource.MustParse("8Gi"),
 				},
 			},
 		}
@@ -852,17 +853,17 @@ func TestClaimPending(t *testing.T) {
 		f.rqobjects = append(f.rqcobjects, managedQuota)
 
 		// Scheduled Pods
-		pods := newTestPods(4, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("250m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
-		}, &v1.PodStatus{
+		pods := newTestPods(4, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("250m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+		}, &v1Core.PodStatus{
 			Phase: "Running",
 		})
 		// Scheduled Pods that should be filtered out, because they are not in "Running or Pending" state
-		stoppedPods := newTestPods(5, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("250m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
-		}, &v1.PodStatus{
+		stoppedPods := newTestPods(5, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("250m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+		}, &v1Core.PodStatus{
 			Phase: "Stopped",
 		})
 
@@ -871,13 +872,13 @@ func TestClaimPending(t *testing.T) {
 		}
 
 		// Keep only pods in "Running or Pending" state
-		pods = utils.FilterPods(pods)
+		pods = utils.FilterRunningPods(pods)
 
 		f.podLister = pods
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("600m"),
-			v1.ResourceMemory: resource.MustParse("5Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("600m"),
+			v1Core.ResourceMemory: resource.MustParse("5Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -892,37 +893,37 @@ func TestClaimPending(t *testing.T) {
 	t.Run("1 Node 16Gi 4CPU - Claim 6Gi 600m - Request 6Gi 750m - Should be Pending CPU", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("4"),
-			v1.ResourceMemory: resource.MustParse("16Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("4"),
+			v1Core.ResourceMemory: resource.MustParse("16Gi"),
 		})
 		// Existing Quota
-		managedQuota := &v1.ResourceQuota{
+		managedQuota := &v1Core.ResourceQuota{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      utils.ResourceQuotaName,
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1.ResourceQuotaSpec{
-				Hard: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("800m"),
-					v1.ResourceMemory: resource.MustParse("6Gi"),
+			Spec: v1Core.ResourceQuotaSpec{
+				Hard: v1Core.ResourceList{
+					v1Core.ResourceCPU:    resource.MustParse("800m"),
+					v1Core.ResourceMemory: resource.MustParse("6Gi"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
 		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Scheduled Pods
-		pods := newTestPods(3, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("250m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
-		}, &v1.PodStatus{
+		pods := newTestPods(3, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("250m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+		}, &v1Core.PodStatus{
 			Phase: "Running",
 		})
 		f.podLister = pods
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("600m"),
-			v1.ResourceMemory: resource.MustParse("6Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("600m"),
+			v1Core.ResourceMemory: resource.MustParse("6Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -940,14 +941,14 @@ func TestClaimRejected(t *testing.T) {
 	t.Run("1 Node 8Gi 1CPU - Claim 10Gi 300m - Max Allocation Memory", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("300m"),
-			v1.ResourceMemory: resource.MustParse("10Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("300m"),
+			v1Core.ResourceMemory: resource.MustParse("10Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -963,14 +964,14 @@ func TestClaimRejected(t *testing.T) {
 	t.Run("1 Node 8Gi 1CPU - Claim 2Gi 500m - Max Allocation CPU", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("500m"),
-			v1.ResourceMemory: resource.MustParse("2Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("500m"),
+			v1Core.ResourceMemory: resource.MustParse("2Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -986,20 +987,20 @@ func TestClaimRejected(t *testing.T) {
 	t.Run("1 Node 8Gi 1CPU - Claim 2.5Gi 100m - Not Enough Memory", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Quota (already reserved resource)
 		f.resourceQuotaLister = append(f.resourceQuotaLister,
-			newTestResourceQuota("otherns", "managed", &v1.ResourceList{
-				v1.ResourceCPU:    resource.MustParse("800m"),
-				v1.ResourceMemory: resource.MustParse("6Gi"),
+			newTestResourceQuota("otherns", "managed", &v1Core.ResourceList{
+				v1Core.ResourceCPU:    resource.MustParse("800m"),
+				v1Core.ResourceMemory: resource.MustParse("6Gi"),
 			}))
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("100m"),
-			v1.ResourceMemory: resource.MustParse("2.50Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("100m"),
+			v1Core.ResourceMemory: resource.MustParse("2.50Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -1014,20 +1015,20 @@ func TestClaimRejected(t *testing.T) {
 	t.Run("1 Node 8Gi 1CPU - Claim 1.8Gi 300m - Not Enough CPU", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Quota (already reserved resource)
 		f.resourceQuotaLister = append(f.resourceQuotaLister,
-			newTestResourceQuota("otherns", "managed", &v1.ResourceList{
-				v1.ResourceCPU:    resource.MustParse("800m"),
-				v1.ResourceMemory: resource.MustParse("6Gi"),
+			newTestResourceQuota("otherns", "managed", &v1Core.ResourceList{
+				v1Core.ResourceCPU:    resource.MustParse("800m"),
+				v1Core.ResourceMemory: resource.MustParse("6Gi"),
 			}))
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("300m"),
-			v1.ResourceMemory: resource.MustParse("1.8Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("300m"),
+			v1Core.ResourceMemory: resource.MustParse("1.8Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -1042,14 +1043,14 @@ func TestClaimRejected(t *testing.T) {
 	t.Run("error while updating claim status should requeue", func(t *testing.T) {
 		f := newFixture(t)
 		// Nodes
-		f.nodeLister = newTestNodes(1, &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("1"),
-			v1.ResourceMemory: resource.MustParse("8Gi"),
+		f.nodeLister = newTestNodes(1, &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("1"),
+			v1Core.ResourceMemory: resource.MustParse("8Gi"),
 		})
 		// Test against claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("300m"),
-			v1.ResourceMemory: resource.MustParse("10Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("300m"),
+			v1Core.ResourceMemory: resource.MustParse("10Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -1072,7 +1073,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 	t.Run("blank namespace with target annotation should generate default claim", func(t *testing.T) {
 		f := newFixture(t)
 		// Test against NS
-		ns := &v1.Namespace{
+		ns := &v1Core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: metav1.NamespaceDefault,
 				Labels: map[string]string{
@@ -1083,9 +1084,9 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 		f.namespaceLister = append(f.namespaceLister, ns)
 		f.nsobjects = append(f.nsobjects, ns)
 		// Expect Claim
-		expectedClaim := newTestResourceQuotaClaim("default", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("2"),
-			v1.ResourceMemory: resource.MustParse("6Gi"),
+		expectedClaim := newTestResourceQuotaClaim("default", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("2"),
+			v1Core.ResourceMemory: resource.MustParse("6Gi"),
 		})
 		f.expectCreateResourceQuotaClaimAction(expectedClaim)
 
@@ -1095,7 +1096,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 	t.Run("blank namespace without target annotation should not generate default claim", func(t *testing.T) {
 		f := newFixture(t)
 		// Test against NS
-		ns := &v1.Namespace{
+		ns := &v1Core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: metav1.NamespaceDefault,
 				Labels: map[string]string{
@@ -1112,7 +1113,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 	t.Run("namespace with target annotation containing a quota should not generate default claim", func(t *testing.T) {
 		f := newFixture(t)
 		// Test against NS
-		ns := &v1.Namespace{
+		ns := &v1Core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: metav1.NamespaceDefault,
 				Labels: map[string]string{
@@ -1123,9 +1124,9 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 		f.namespaceLister = append(f.namespaceLister, ns)
 		f.nsobjects = append(f.nsobjects, ns)
 		// Quota
-		existingQuota := newTestResourceQuota(metav1.NamespaceDefault, "test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("2"),
-			v1.ResourceMemory: resource.MustParse("6Gi"),
+		existingQuota := newTestResourceQuota(metav1.NamespaceDefault, "test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("2"),
+			v1Core.ResourceMemory: resource.MustParse("6Gi"),
 		})
 		f.resourceQuotaLister = append(f.resourceQuotaLister, existingQuota)
 
@@ -1135,7 +1136,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 	t.Run("namespace with target annotation containing a claim should not generate default claim", func(t *testing.T) {
 		f := newFixture(t)
 		// Test against NS
-		ns := &v1.Namespace{
+		ns := &v1Core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: metav1.NamespaceDefault,
 				Labels: map[string]string{
@@ -1146,9 +1147,9 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 		f.namespaceLister = append(f.namespaceLister, ns)
 		f.nsobjects = append(f.nsobjects, ns)
 		// Claim
-		claim := newTestResourceQuotaClaim("test", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("2"),
-			v1.ResourceMemory: resource.MustParse("6Gi"),
+		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("2"),
+			v1Core.ResourceMemory: resource.MustParse("6Gi"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 
@@ -1158,7 +1159,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 	t.Run("namespace with target annotation containing a Rejected claim should generate default claim", func(t *testing.T) {
 		f := newFixture(t)
 		// Test against NS
-		ns := &v1.Namespace{
+		ns := &v1Core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: metav1.NamespaceDefault,
 				Labels: map[string]string{
@@ -1175,9 +1176,9 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 			},
 		})
 		// Expected Claim
-		expectedClaim := newTestResourceQuotaClaim("default", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("2"),
-			v1.ResourceMemory: resource.MustParse("6Gi"),
+		expectedClaim := newTestResourceQuotaClaim("default", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("2"),
+			v1Core.ResourceMemory: resource.MustParse("6Gi"),
 		})
 		f.expectCreateResourceQuotaClaimAction(expectedClaim)
 
@@ -1187,7 +1188,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 	t.Run("error while creating claim should requeue", func(t *testing.T) {
 		f := newFixture(t)
 		// Test against NS
-		ns := &v1.Namespace{
+		ns := &v1Core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: metav1.NamespaceDefault,
 				Labels: map[string]string{
@@ -1198,9 +1199,9 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 		f.namespaceLister = append(f.namespaceLister, ns)
 		f.nsobjects = append(f.nsobjects, ns)
 		// Expect
-		expectedClaim := newTestResourceQuotaClaim("default", &v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("2"),
-			v1.ResourceMemory: resource.MustParse("6Gi"),
+		expectedClaim := newTestResourceQuotaClaim("default", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("2"),
+			v1Core.ResourceMemory: resource.MustParse("6Gi"),
 		})
 		f.expectCreateResourceQuotaClaimAction(expectedClaim)
 		// Inject client error
@@ -1212,7 +1213,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 	t.Run("non existing ns should be ignored ", func(t *testing.T) {
 		f := newFixture(t)
 		// Non existing NS
-		ns := &v1.Namespace{
+		ns := &v1Core.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: metav1.NamespaceDefault,
 				Labels: map[string]string{

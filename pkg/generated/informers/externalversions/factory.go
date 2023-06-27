@@ -8,7 +8,7 @@ import (
 	time "time"
 
 	versioned "github.com/ca-gip/kotary/pkg/generated/clientset/versioned"
-	cagip "github.com/ca-gip/kotary/pkg/generated/informers/externalversions/ca-gip"
+	cagip "github.com/ca-gip/kotary/pkg/generated/informers/externalversions/cagip"
 	internalinterfaces "github.com/ca-gip/kotary/pkg/generated/informers/externalversions/internalinterfaces"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
