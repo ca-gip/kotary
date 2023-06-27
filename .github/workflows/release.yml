@@ -25,14 +25,14 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: cagip/kotary:${{ github.ref }}
+          tags: cagip/kotary:${{ github.event.release.tag_name }}
 
       - name: Create Release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          tag_name: ${{ github.event.release.tag_name }}
+          release_name: ${{ github.event.release.tag_name }}
           draft: false
           prerelease: false
