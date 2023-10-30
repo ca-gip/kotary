@@ -39,8 +39,7 @@ jobs:
         run: echo "export GOROOT=/opt/hostedtoolcache/go/1.17.13/x64" >> $GITHUB_ENV
       
       - name: Deploy kotary operator
-        run: | 
-        kubectl apply -f artifacts/deployment.yml && kubectl get all -n kube-system
+        run: kubectl apply -f artifacts/deployment.yml && kubectl get all -n kube-system
       - name: Create kotary ConfigMap
         run: kubectl -n kube-system create -f .github/KindConfig/ConfigMap.yaml
       - name: Create NS 'kotarytest' and add a ResourceQuota
