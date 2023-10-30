@@ -23,7 +23,7 @@ jobs:
       - name: Create cluster KinD
         uses: helm/kind-action@v1.5.0
         with:
-          config: .github/kind-cluster-${{ matrix.kubernetes }}.yaml
+          config: .github/KindConfig/kind-cluster-${{ matrix.kubernetes }}.yaml
 
       - name: testing cluster kinD
         run: | 
@@ -39,17 +39,4 @@ jobs:
         run: echo "export GOROOT=/opt/hostedtoolcache/go/1.17.13/x64" >> $GITHUB_ENV
       
       - name: Create kotary ConfigMap
-        run: cat <<EOF | kubectl -n kube-system create -f -
-              apiVersion: v1
-              kind: ConfigMap
-              data:
-                defaultClaimSpec: |
-                  cpu: "2"
-                  memory: "10Gi"
-                ratioMaxAllocationMemory: "0.33"
-                ratioMaxAllocationCPU: "0.33"
-                ratioOverCommitMemory: "1.3"
-                ratioOverCommitCPU: "1.3"
-              metadata:
-                name: kotary-config
-              EOF
+        run: kubectl -n kube-system create -f .github/KindConfig/ConfigMap.yaml
