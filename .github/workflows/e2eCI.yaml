@@ -43,7 +43,6 @@ jobs:
       - name: Create kotary ConfigMap
         run: kubectl -n kube-system create -f .github/KindConfig/ConfigMap.yaml
       - name: Create NS 'kotarytest' and add a ResourceQuota
-        uses: actions/checkout@v4
         run: | 
           kubectl create ns kotarytest
           while  ! kubectl get pods -n $ks | grep kotary | grep Running > /dev/null ; do     sleep 5;     echo "Waiting for pod to be Running"; done
