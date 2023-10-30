@@ -1,0 +1,7 @@
+apiVersion: cagip.github.com/v1
+kind: ResourceQuotaClaim
+metadata:
+  name: Demo
+spec:
+  memory: 5Gi
+  cpu: 2000m
