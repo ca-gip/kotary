@@ -137,7 +137,6 @@ func NewController(
 			controller.enqueueNamespace(new)
 		},
 	})
-
 	return controller
 }
 

@@ -1,0 +1,107 @@
+---
+name: kotary e2e testing
+on: push
+jobs:
+  kind:
+    runs-on: ubuntu-latest
+    name: Test Kotary Operator on Kind cluster. Kube version
+    strategy:
+      fail-fast: false
+      matrix:
+        kubernetes:
+          - 1.21
+          - 1.23
+          - 1.26
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: Create cluster KinD
+        uses: helm/kind-action@v1.5.0
+        with:
+          config: e2e/KindConfig/kind-cluster-${{ matrix.kubernetes }}.yaml
+
+      - name: testing cluster kinD
+        run: | 
+              kubectl cluster-info --context kind-chart-testing echo " current-context:" $(kubectl config current-context)
+              kubectl get all --all-namespaces
+          
+      - name: Set GOROOT
+        run: echo "export GOROOT=/opt/hostedtoolcache/go/1.20/x64" >> $GITHUB_ENV
+      
+      - name: Deploy CRD
+        run: kubectl apply -f artifacts/crd.yml
+
+      - name: Deploy kotary operator
+        run: kubectl apply -f artifacts/deployment.yml
+
+      - name: Create kotary ConfigMap
+        run: kubectl -n kube-system create -f e2e/KotaryService/ConfigMap.yaml
+
+      - name: Golden test 0 - Create NS 'kotarytest' and add a ResourceQuota
+        run: | 
+          kubectl create ns kotarytest
+          while  ! kubectl get pods -n kube-system | grep kotary | grep Running > /dev/null ; do     sleep 5;     echo "Waiting for Kotary pod to be Running...."; done
+          kubectl apply -f e2e/KotaryService/QuotaClaim.yaml -n kotarytest
+          if kubectl get quotaclaim -n kotarytest | grep REJECTED ; then exit 1 ; fi
+          kubectl get resourcequota -n kotarytest
+      
+      - name: Golden test 1 - adding pods and verifying resources used
+        run: |
+          kubectl apply -f e2e/KindConfig/pod1.yml -n kotarytest
+          echo "<<<<<<<<< Ressource quota should be cpu: 100/660m memory: 0.25/1Gi >>>>>>>>>"
+          kubectl get resourcequota -n kotarytest
+          kubectl apply -f e2e/KindConfig/pod2.yml -n kotarytest
+          echo "<<<<<<<<< Ressource quota should be cpu: 200/660m memory: 0.5/1Gi >>>>>>>>>"
+          kubectl get resourcequota -n kotarytest
+          kubectl apply -f e2e/KindConfig/pod3.yml -n kotarytest
+          echo "<<<<<<<<< Ressource quota should be cpu: 350/660m memory: 0.75/1Gi >>>>>>>>>"
+          kubectl get resourcequota -n kotarytest
+          kubectl apply -f e2e/KindConfig/pod4.yml -n kotarytest
+          echo "<<<<<<<<< Ressource quota should be cpu: 500/660m memory: 1/1Gi >>>>>>>>>"
+          kubectl get resourcequota -n kotarytest
+
+      - name: Golden test 2 - trying to add a pod but no ressource left in NS. (Should return error)
+        run: if kubectl apply -f e2e/KindConfig/pod5.yml -n kotarytest ; then exit 1 ; fi
+      
+      - name: Golden test 3 - Upscale
+        run: |
+          kubectl apply -f e2e/KotaryService/QuotaClaimUp.yaml -n kotarytest
+          if kubectl get quotaclaim -n kotarytest | grep REJECTED ; then exit 1 ; fi
+          kubectl get resourcequota -n kotarytest
+
+      - name: Golden test 4 - Upscale (REJECTED)
+        run: |
+          kubectl apply -f e2e/KotaryService/QuotaClaimToBig.yaml -n kotarytest
+          if ! kubectl get quotaclaim -n kotarytest | grep REJECTED ; then exit 1 ; fi
+          kubectl get resourcequota -n kotarytest
+      
+      - name: Golden test 5 - Downscale
+        run: | 
+          kubectl apply -f e2e/KotaryService/QuotaClaim.yaml -n kotarytest
+          if kubectl get quotaclaim -n kotarytest | grep REJECTED ; then exit 1 ; fi
+          kubectl get resourcequota -n kotarytest
+      
+      - name: Golden test 6 - Downscale (PENDING)
+        run: | 
+          kubectl apply -f e2e/KotaryService/QuotaClaimPending.yaml -n kotarytest
+          kubectl get quotaclaim -n kotarytest
+          kubectl get resourcequota -n kotarytest
+          if ! kubectl get quotaclaim -n kotarytest | grep PENDING ; then exit 1 ; fi
+          kubectl get resourcequota -n kotarytest
+          kubectl delete pod -n kotarytest podtest-4
+          echo "<<<<<<<<< Deleted a pod, the pending claim should now be accepted >>>>>>>>>"
+          if kubectl get quotaclaim -n kotarytest | grep PENDING ; then exit 1 ; fi
+          kubectl get resourcequota -n kotarytest
+          kubectl apply -f e2e/KotaryService/QuotaClaim.yaml -n kotarytest
+      
+      - name: Golden test 7 - Check RessourceQuota is well computed
+        run: | 
+          kubectl apply -f e2e/KindConfig/badpod.yml
+          echo "<<<<<<<<< Ressource quota should be cpu: 350/660m memory: 0.75/1Gi >>>>>>>>>"
+          kubectl get resourcequota -n kotarytest
