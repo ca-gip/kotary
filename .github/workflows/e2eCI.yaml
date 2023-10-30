@@ -39,13 +39,14 @@ jobs:
         run: echo "export GOROOT=/opt/hostedtoolcache/go/1.17.13/x64" >> $GITHUB_ENV
       
       - name: Deploy kotary operator
-        run: kubectl apply -f artifacts/deployment.yml && kubectl get all -n $ks
+        run: | 
+        kubectl apply -f artifacts/deployment.yml && kubectl get all -n kube-system
       - name: Create kotary ConfigMap
         run: kubectl -n kube-system create -f .github/KindConfig/ConfigMap.yaml
       - name: Create NS 'kotarytest' and add a ResourceQuota
         run: | 
           kubectl create ns kotarytest
-          while  ! kubectl get pods -n $ks | grep kotary | grep Running > /dev/null ; do     sleep 5;     echo "Waiting for pod to be Running"; done
+          while  ! kubectl get pods -n kube-system | grep kotary | grep Running > /dev/null ; do     sleep 5;     echo "Waiting for pod to be Running"; done
           kubectl apply -f .github/KindConfig/QuotaClaim.yaml
           kubectl get resourcequota -n kotarytest
           kubectl get quotaclaim -n kotarytest
