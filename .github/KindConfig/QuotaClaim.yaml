@@ -1,7 +1,8 @@
-apiVersion: cagip.github.com/v1
-kind: ResourceQuotaClaim
+apiVersion: v1
+kind: ResourceQuota
 metadata:
   name: Demo
 spec:
-  memory: 5Gi
-  cpu: 2000m
+  hard:
+    requests.cpu: "2"
+    requests.memory: 5Gi
