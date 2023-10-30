@@ -12,6 +12,7 @@ jobs:
           - 1.21
           - 1.23
     steps:
+
       - name: checkout
         uses: actions/checkout@v4
 
@@ -36,15 +37,35 @@ jobs:
           ACTIONS_ALLOW_UNSECURE_COMMANDS: true
           
       - name: Set GOROOT
-        run: echo "export GOROOT=/opt/hostedtoolcache/go/1.17.13/x64" >> $GITHUB_ENV
+        run: echo "export GOROOT=/opt/hostedtoolcache/go/1.20/x64" >> $GITHUB_ENV
       
+      - name: Deploy CRD
+        run: kubectl apply -f artifacts/crd.yml
+
       - name: Deploy kotary operator
-        run: kubectl apply -f artifacts/deployment.yml
+        run: kubectl apply -f artifacts/deployment.yml && kubectl get all -n kube-system
+
       - name: Create kotary ConfigMap
         run: kubectl -n kube-system create -f .github/KindConfig/ConfigMap.yaml
       - name: Create NS 'kotarytest' and add a ResourceQuota
         run: | 
           kubectl create ns kotarytest
-          kubectl apply -f .github/KindConfig/QuotaClaim.yaml
+          while  ! kubectl get pods -n kube-system | grep kotary | grep Running > /dev/null ; do     sleep 5;     echo "Waiting for Kotary pod to be Running"; done
+          kubectl apply -f .github/KindConfig/QuotaClaim.yaml -n kotarytest
           kubectl get resourcequota -n kotarytest
           kubectl get quotaclaim -n kotarytest
+      
+      - name: Golden test 1 - in Namespace 'kotarytest' add pods
+        run: |
+          kubectl apply -f .github/KindConfig/pod1.yml
+          echo "<<<<<<<<< Ressource quota should be cpu: 500/2000m memory: 1/5Gi >>>>>>>>>"
+          kubectl get resourcequota -n kotarytest
+          kubectl apply -f .github/KindConfig/pod2.yml
+          echo "<<<<<<<<< Ressource quota should be cpu: 1000/2000m memory: 2/5Gi >>>>>>>>>"
+          kubectl get resourcequota -n kotarytest
+          kubectl apply -f .github/KindConfig/pod3.yml
+          echo "<<<<<<<<< Ressource quota should be cpu: 1500/2000m memory: 3/5Gi >>>>>>>>>"
+          kubectl get resourcequota -n kotarytest
+          kubectl apply -f .github/KindConfig/pod4.yml
+          echo "<<<<<<<<< Ressource quota should be cpu: 2000/2000m memory: 5/5Gi >>>>>>>>>"
+          kubectl get resourcequota -n kotarytest
