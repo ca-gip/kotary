@@ -38,6 +38,9 @@ jobs:
       - name: Set GOROOT
         run: echo "export GOROOT=/opt/hostedtoolcache/go/1.20/x64" >> $GITHUB_ENV
       
+      -name: Deploy CRD
+        run: kubectl apply -f artifacts/crd.yml
+
       - name: Deploy kotary operator
         run: kubectl apply -f artifacts/deployment.yml && kubectl get all -n kube-system
       - name: Create kotary ConfigMap
