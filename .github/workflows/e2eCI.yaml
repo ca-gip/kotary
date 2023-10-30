@@ -46,6 +46,6 @@ jobs:
         run: | 
           kubectl create ns kotarytest
           while  ! kubectl get pods -n kube-system | grep kotary | grep Running > /dev/null ; do     sleep 5;     echo "Waiting for pod to be Running"; done
-          kubectl apply -f .github/KindConfig/QuotaClaim.yaml
+          kubectl apply -f .github/KindConfig/QuotaClaim.yaml -n kotarytest
           kubectl get resourcequota -n kotarytest
           kubectl get quotaclaim -n kotarytest
