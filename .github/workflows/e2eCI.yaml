@@ -12,6 +12,7 @@ jobs:
           - 1.21
           - 1.23
     steps:
+
       - name: checkout
         uses: actions/checkout@v4
 
@@ -43,6 +44,7 @@ jobs:
 
       - name: Deploy kotary operator
         run: kubectl apply -f artifacts/deployment.yml && kubectl get all -n kube-system
+        
       - name: Create kotary ConfigMap
         run: kubectl -n kube-system create -f .github/KindConfig/ConfigMap.yaml
       - name: Create NS 'kotarytest' and add a ResourceQuota
