@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+        name: podtest-2
+spec:
+  containers:
+  - name: hw-container1 
+    image: nginx
+    resources:
+      limits:
+        memory: "1Gi"
+        cpu: "660m"
+      requests:
+        memory: "250Mi"
+        cpu: "100m"
