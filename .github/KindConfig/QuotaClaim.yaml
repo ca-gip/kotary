@@ -3,5 +3,5 @@ kind: ResourceQuotaClaim
 metadata:
   name: demo
 spec:
-  memory: 500Gi
+  memory: 5Gi
   cpu: 2000m
