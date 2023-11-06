@@ -12,8 +12,8 @@ jobs:
           - 1.21
           - 1.23
           - 1.26
+    continue-on-error: true
     steps:
-
       - name: checkout
         uses: actions/checkout@v4
 
@@ -68,8 +68,7 @@ jobs:
           kubectl get resourcequota -n kotarytest
 
       - name: Golden test 2 - trying to add a pod but no ressource left in NS. (Should return error)
-        continue-on-error: true
-        run: kubectl apply -f e2e/KindConfig/pod5.yml -n kotarytest
+        run: if kubectl apply -f e2e/KindConfig/pod5.yml -n kotarytest ; then exit 1 ; fi
       
       - name: Golden test 3 - Upscale
         run: |
