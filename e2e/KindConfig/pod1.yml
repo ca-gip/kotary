@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-        name: podtest-1
+  name: podtest-1
 spec:
   containers:
   - name: hw-container1 
