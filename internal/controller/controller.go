@@ -394,15 +394,15 @@ func (c *Controller) handlePod(obj interface{}) {
 		klog.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
 	}
 	//retrieve the namespace of the pod
-	Pod_Namespace := object.GetNamespace()
+	podNamespace := object.GetNamespace()
 
-	klog.Infof("Processing pod: %s (%s)", object.GetName(), Pod_Namespace)
+	klog.Infof("Processing pod: %s (%s)", object.GetName(), podNamespace)
 
 	// Empty selector
 	selector, _ := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{})
 
 	//retrieve the list of current quotaclaims in the namespace
-	QuotaClaims, err := c.resourceQuotaClaimLister.ResourceQuotaClaims(Pod_Namespace).List(selector)
+	quotaClaims, err := c.resourceQuotaClaimLister.ResourceQuotaClaims(podNamespace).List(selector)
 
 	if err != nil {
 		klog.Infof("error while getting quotaclaims: %s", err)
@@ -410,7 +410,7 @@ func (c *Controller) handlePod(obj interface{}) {
 	}
 
 	//iterate through the list and enqueue claims to be treated
-	for _, claim := range QuotaClaims {
+	for _, claim := range quotaClaims {
 		notReject := claim.Status.Phase != cagipv1.PhaseRejected
 		notAccepted := claim.Status.Phase != cagipv1.PhaseAccepted
 		if notReject && notAccepted {
