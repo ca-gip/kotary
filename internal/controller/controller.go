@@ -122,6 +122,7 @@ func NewController(
 	resourceQuotaClaimInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueResourceQuotaClaim,
 		UpdateFunc: func(old, new interface{}) {
+			klog.Infof("============= RequestQuotaClaim informer is invoqued =============")
 			newQuotaClaim := new.(*cagipv1.ResourceQuotaClaim)
 			oldQuotaClaim := old.(*cagipv1.ResourceQuotaClaim)
 			if newQuotaClaim.ResourceVersion == oldQuotaClaim.ResourceVersion {
@@ -134,7 +135,16 @@ func NewController(
 	namespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: controller.enqueueNamespace,
 		UpdateFunc: func(old, new interface{}) {
+			klog.Infof("============= Namespace Informer is invoqued =============")
 			controller.enqueueNamespace(new)
+		},
+	})
+
+	//Set up an event handler for pod deletions to handle changes in Resource Used
+	podsInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		DeleteFunc: func(obj interface{}) {
+			klog.Infof("============= Pods informer is invoqued (delete) =============")
+			controller.handlePod(obj)
 		},
 	})
 
@@ -228,6 +238,7 @@ func (c *Controller) processNextWorkClaim() bool {
 		defer c.resourceQuotaClaimWorkQueue.Done(obj)
 		var key string
 		var ok bool
+		klog.Infof("Working on %s quotaclaim", key)
 		// We expect strings to come off the resourceQuotaClaimWorkQueue. These are of the
 		// form namespace/name. We do this as the delayed nature of the
 		// resourceQuotaClaimWorkQueue means the items in the informer cache may actually be
@@ -340,23 +351,70 @@ func (c *Controller) handleObject(obj interface{}) {
 			utilruntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
 			return
 		}
-		klog.V(4).Infof("Recovered deleted object '%s' from tombstone", object.GetName())
+		klog.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
 	}
-	klog.V(4).Infof("Processing object: %s", object.GetName())
+	klog.Infof("Processing object: %s", object.GetName())
 	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
 		// If this object is not owned by a ResourceQuotaClaims, we should not do anything more
 		// with it.
 		if ownerRef.Kind != "ResourceQuotaClaims" {
+			klog.Infof("not owned by a ResourceQuotaClaims")
 			return
 		}
 
 		claim, err := c.resourceQuotaClaimLister.ResourceQuotaClaims(object.GetNamespace()).Get(ownerRef.Name)
 		if err != nil {
-			klog.V(4).Infof("ignoring orphaned object '%s' of ResourceQuotaClaims '%s'", object.GetSelfLink(), ownerRef.Name)
+			klog.Infof("ignoring orphaned object '%s' of ResourceQuotaClaims '%s'", object.GetSelfLink(), ownerRef.Name)
 			return
 		}
-
+		klog.Infof("Processing claim: %s", claim)
 		c.enqueueResourceQuotaClaim(claim)
 		return
+	}
+}
+
+// handlePod will take a pod interface in argument and try to find all its Claims that are still not
+// treated and enqueue them to be processed.
+func (c *Controller) handlePod(obj interface{}) {
+
+	//get the pod object
+	var object metav1.Object
+	var ok bool
+	if object, ok = obj.(metav1.Object); !ok {
+		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+		if !ok {
+			utilruntime.HandleError(fmt.Errorf("error decoding object, invalid type"))
+			return
+		}
+		object, ok = tombstone.Obj.(metav1.Object)
+		if !ok {
+			utilruntime.HandleError(fmt.Errorf("error decoding object tombstone, invalid type"))
+			return
+		}
+		klog.Infof("Recovered deleted object '%s' from tombstone", object.GetName())
+	}
+	//retrieve the namespace of the pod
+	podNamespace := object.GetNamespace()
+
+	klog.Infof("Processing pod: %s (%s)", object.GetName(), podNamespace)
+
+	// Empty selector
+	selector, _ := metav1.LabelSelectorAsSelector(&metav1.LabelSelector{})
+
+	//retrieve the list of current quotaclaims in the namespace
+	quotaClaims, err := c.resourceQuotaClaimLister.ResourceQuotaClaims(podNamespace).List(selector)
+
+	if err != nil {
+		klog.Infof("error while getting quotaclaims: %s", err)
+		return
+	}
+
+	//iterate through the list and enqueue claims to be treated
+	for _, claim := range quotaClaims {
+		notReject := claim.Status.Phase != cagipv1.PhaseRejected
+		notAccepted := claim.Status.Phase != cagipv1.PhaseAccepted
+		if notReject && notAccepted {
+			c.enqueueResourceQuotaClaim(claim)
+		}
 	}
 }
