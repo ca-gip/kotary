@@ -367,7 +367,7 @@ func (c *Controller) handleObject(obj interface{}) {
 			klog.Infof("ignoring orphaned object '%s' of ResourceQuotaClaims '%s'", object.GetSelfLink(), ownerRef.Name)
 			return
 		}
-		klog.Infof("Processing claim: %s", claim)
+		klog.Infof(fmt.Sprintf("Processing claim: %+v", claim))
 		c.enqueueResourceQuotaClaim(claim)
 		return
 	}
