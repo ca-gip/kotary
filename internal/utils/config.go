@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
@@ -171,6 +172,36 @@ func parseConfigMap(configMap *v1.ConfigMap) (parsed *Config, err error) {
 
 	klog.Infof("Loaded config map : %+v\n", parsed)
 
+	generateMetricsFromConfigmap(parsed)
+
 	return
+
+}
+
+func generateMetricsFromConfigmap(parsed *Config) {
+
+	var (
+		kotaryRatioOvercommitMemory = prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "kotary_ratio_overcommit_memory",
+				Help: "The ratioOverCommitMemory defined in the configmap",
+			},
+		)
+
+		kotaryRatioOvercommitCPU = prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "kotary_ratio_overcommit_cpu",
+				Help: "The ratioOverCommitCPU defined in the configmap",
+			},
+		)
+	)
+
+	kotaryRatioOvercommitMemory.Set(parsed.RatioOverCommitMemory)
+	prometheus.MustRegister(kotaryRatioOvercommitMemory)
+
+	kotaryRatioOvercommitCPU.Set(parsed.RatioOverCommitCPU)
+	prometheus.MustRegister(kotaryRatioOvercommitCPU)
+
+	klog.Infof("Overcommit metrics are set")
 
 }
