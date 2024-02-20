@@ -127,6 +127,13 @@ kubectl apply -f https://raw.githubusercontent.com/ca-gip/kotary/master/artifact
 kubectl apply -f https://raw.githubusercontent.com/ca-gip/kotary/master/artifacts/metrics.yml
 ```
 
+The monitor service can be used to retrieve metrics from prometheus, such as 
+```bash
+kotary_ratio_overcommit_memory{container="kotary", endpoint="metrics", instance="172.20.98.248:9080", job="kotary-svc", namespace="kube-system", pod="kotary-7c99776468-ntvff", service="kotary-svc"}
+```
+
+So, in the case of a multi-cluster deployment, the ResourcesQuotas Dashboard can be automatically adapted from the configured overcommit.
+
 ## Getting Started
 
 ### Update a ResourceQuota
