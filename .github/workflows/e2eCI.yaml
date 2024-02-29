@@ -12,6 +12,7 @@ jobs:
           - 1.21
           - 1.23
           - 1.24
+          - 1.25
           - 1.26
     steps:
       - name: checkout
@@ -21,11 +22,12 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.20'
-      
+
+      - name: Export build version
+        run: echo "kotary_image=kotary:${{ github.sha }}" >> "$GITHUB_ENV"
+
       - name: Docker Build image
-        run: | 
-          docker build -t "ci/kotary:${{ matrix.kubernetes }}" .
-          docker image ls | grep ci
+        run: docker build -t $kotary_image .
 
       - name: Create cluster KinD
         uses: helm/kind-action@v1.5.0
@@ -33,23 +35,17 @@ jobs:
           config: e2e/KindConfig/kind-cluster-${{ matrix.kubernetes }}.yaml
 
       - name: testing cluster kinD
-        run: | 
-              kubectl cluster-info --context kind-chart-testing echo " current-context:" $(kubectl config current-context)
-              kubectl get all --all-namespaces
-        
+        run: kubectl get pods --all-namespaces
+
       - name: Load docker image into kind cluster
-        run: kind load docker-image "ci/kotary:${{ matrix.kubernetes }}" --name chart-testing
-          
-      - name: Set GOROOT
-        run: echo "export GOROOT=/opt/hostedtoolcache/go/1.20/x64" >> $GITHUB_ENV
-      
+        run: kind load docker-image "$kotary_image"
+
       - name: Deploy CRD
         run: kubectl apply -f artifacts/crd.yml
 
       - name: Edit kotary deployement
         run: |
-          version=${{ matrix.kubernetes }}
-          sed -i -E -e "s/cagip\/kotary:v[0-9.]+/ci\/kotary:$version/g" artifacts/deployment.yml -e "s/Always/Never/g" artifacts/deployment.yml;
+          sed -i -E -e "s#cagip/kotary:v[0-9.]+#$kotary_image#g" artifacts/deployment.yml -e "s#Always#Never#g" artifacts/deployment.yml;
           cat artifacts/deployment.yml
 
       - name: run tests
