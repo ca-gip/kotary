@@ -27,7 +27,7 @@ var (
 	kubeconfig string
 )
 
-const resyncPeriod = time.Minute * 30
+const resyncPeriod = time.Seconds * 10
 
 func main() {
 	flag.StringVar(&kubeconfig, "kubeconfig", defaultKubeconfig(), "Path to a kubeconfig. Only required if out-of-cluster.")

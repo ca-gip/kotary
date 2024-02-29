@@ -56,8 +56,8 @@ spec:
       serviceAccountName: kotary
       containers:
         - name: kotary
-          image: cagip/kotary:v0.24.0
-          imagePullPolicy: Always
+          image: ci/kotary:1.25-994c3c9fa25722f7da25a1d070af61c5333b6f25
+          imagePullPolicy: Never
           envFrom:
             - configMapRef:
                 name: kotary-config
