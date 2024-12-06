@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"reflect"
 
 	"github.com/ca-gip/kotary/internal/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -94,6 +95,19 @@ func (c *Controller) syncHandlerClaim(key string) error {
 		return err
 	}
 
+	// Check if the claim is over the max count jobs
+	if msg := c.checkMaxCountJobs(claim, c.settings.MaxJobsLimitNS); msg != utils.EmptyMsg {
+		err := c.claimRejected(claim, msg)
+		return err
+	}
+
+	//Check if the claim is over for the max count jobs for the cluster
+	if msg := c.checkMaxCountJobsCluster(claim, c.settings.MaxJobsLimitCluster); msg != utils.EmptyMsg {
+		err := c.claimRejected(claim, msg)
+		return err
+	}
+	// The claim is accepted
+
 	// The claim has passed the verification
 
 	// The managed quota is updated
@@ -182,13 +196,21 @@ func (c *Controller) updateResourceQuota(claim *cagipv1.ResourceQuotaClaim) erro
 			klog.V(4).Infof("Error creating ResourceQuota for ns %s", claim.Namespace)
 			return err
 		}
-	} else if !quota.Equals(resourceQuota.Status.Hard, claim.Spec) {
+	} else if !quota.Equals(resourceQuota.Spec.Hard, claim.Spec) {
 		// If this spec of the ResourceQuota is not the desired one we update it
 		klog.V(4).Infof("ResourceQuota not synced, updating for ns %s", claim.Namespace)
+
+		// If job count doesn't exist in claim, it would disappear from the quota
+		// So if there isn't job count in new claim, we preserve the existing job count from resourcequota
+		if reflect.ValueOf(claim.Spec["count/jobs.batch"]).IsZero() {
+			klog.V(4).Infof("Preserving job count from existing ResourceQuota for ns %s", claim.Namespace)
+			claim.Spec["count/jobs.batch"] = resourceQuota.Spec.Hard["count/jobs.batch"]
+		}
+
 		_, err := c.resourcequotaclientset.CoreV1().ResourceQuotas(claim.Namespace).Update(context.TODO(), newResourceQuota(claim), metav1.UpdateOptions{})
 		if err != nil {
-			klog.Errorf("Could not update ResourceQuotas for ns %s ", claim.Annotations)
-			// If an error occurs during Create, the item is requeue
+			klog.Errorf("Could not update ResourceQuotas for ns %s ", claim.Namespace)
+			// If an error occurs during Update, the item is requeue
 			return err
 		}
 	}
@@ -355,6 +377,7 @@ func newResourceQuota(claim *cagipv1.ResourceQuotaClaim) *v1Core.ResourceQuota {
 	labels := map[string]string{
 		"creator": utils.ControllerName,
 	}
+
 	return &v1Core.ResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      utils.ResourceQuotaName,
@@ -365,4 +388,39 @@ func newResourceQuota(claim *cagipv1.ResourceQuotaClaim) *v1Core.ResourceQuota {
 			Hard: quota.Add(v1Core.ResourceList{}, claim.Spec),
 		},
 	}
+}
+
+// Check max count jobs
+
+func (c *Controller) checkMaxCountJobs(claim *cagipv1.ResourceQuotaClaim, maxCountJobs int) string {
+	if jobCount, ok := claim.Spec["count/jobs.batch"]; ok && jobCount.Value() > int64(maxCountJobs) {
+		return fmt.Sprintf("requested max count jobs (%d) cannot exceed max value (%d)", jobCount.Value(), maxCountJobs)
+	}
+	return utils.EmptyMsg
+}
+
+// Check max count jobs for the entire cluster
+func (c *Controller) checkMaxCountJobsCluster(claim *cagipv1.ResourceQuotaClaim, maxCountJobsCluster int) string {
+	totalJobs := 0
+
+	// Retrieve all ResourceQuotas
+	managedQuotas, err := c.resourceQuotaLister.List(labels.Everything())
+	if err != nil {
+		klog.Errorf("Could not retrieve ResourceQuotas: %s", err)
+		return "Error retrieving ResourceQuotas"
+	}
+
+	// Sum up the job counts across all quotas
+	for _, quota := range managedQuotas {
+		if jobCount, ok := quota.Spec.Hard["count/jobs.batch"]; ok {
+			totalJobs += int(jobCount.Value())
+		}
+	}
+
+	// Check if adding the current claim exceeds the cluster limit
+	if jobCount, ok := claim.Spec["count/jobs.batch"]; ok && totalJobs+int(jobCount.Value()) > maxCountJobsCluster {
+		return fmt.Sprintf("Cluster max job count exceeded: Max %d jobs allowed.", maxCountJobsCluster)
+	}
+
+	return utils.EmptyMsg
 }

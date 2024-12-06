@@ -20,32 +20,36 @@ func TestNewDefaultResourceQuotaClaim(t *testing.T) {
 		"default ns 500/500Mi": {
 			namespace: "default",
 			defaultResource: v1.ResourceList{
-				v1.ResourceCPU:    resource.MustParse("500"),
-				v1.ResourceMemory: resource.MustParse("500Mi")},
+				v1.ResourceCPU:     resource.MustParse("500"),
+				v1.ResourceMemory:  resource.MustParse("500Mi"),
+				"count/jobs.batch": resource.MustParse("5")},
 			want: cagipv1.ResourceQuotaClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "default",
 					Namespace: "default",
 				},
 				Spec: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("500"),
-					v1.ResourceMemory: resource.MustParse("500Mi"),
+					v1.ResourceCPU:     resource.MustParse("500"),
+					v1.ResourceMemory:  resource.MustParse("500Mi"),
+					"count/jobs.batch": resource.MustParse("5"),
 				},
 			},
 		},
 		"test ns 5k/1Gi": {
 			namespace: "test",
 			defaultResource: v1.ResourceList{
-				v1.ResourceCPU:    resource.MustParse("5k"),
-				v1.ResourceMemory: resource.MustParse("1Gi")},
+				v1.ResourceCPU:     resource.MustParse("5k"),
+				v1.ResourceMemory:  resource.MustParse("1Gi"),
+				"count/jobs.batch": resource.MustParse("3")},
 			want: cagipv1.ResourceQuotaClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "default",
 					Namespace: "test",
 				},
 				Spec: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("5k"),
-					v1.ResourceMemory: resource.MustParse("1Gi"),
+					v1.ResourceCPU:     resource.MustParse("5k"),
+					v1.ResourceMemory:  resource.MustParse("1Gi"),
+					"count/jobs.batch": resource.MustParse("3"),
 				},
 			},
 		},
@@ -145,8 +149,9 @@ func TestHasResourceQuota(t *testing.T) {
 	f := newFixture(t)
 
 	resourceQuota := newTestResourceQuota(metav1.NamespaceDefault, "test", &v1.ResourceList{
-		v1.ResourceCPU:    resource.MustParse("1k"),
-		v1.ResourceMemory: resource.MustParse("1Gi"),
+		v1.ResourceCPU:     resource.MustParse("1k"),
+		v1.ResourceMemory:  resource.MustParse("1Gi"),
+		"count/jobs.batch": resource.MustParse("5"),
 	})
 	f.resourceQuotaLister = append(f.resourceQuotaLister, resourceQuota)
 
@@ -195,8 +200,9 @@ func TestHasClaimWithoutStatus(t *testing.T) {
 				},
 				Status: cagipv1.ResourceQuotaClaimStatus{},
 				Spec: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("1k"),
-					v1.ResourceMemory: resource.MustParse("1Gi"),
+					v1.ResourceCPU:     resource.MustParse("1k"),
+					v1.ResourceMemory:  resource.MustParse("1Gi"),
+					"count/jobs.batch": resource.MustParse("5"),
 				},
 			},
 			expect: true,
@@ -209,8 +215,9 @@ func TestHasClaimWithoutStatus(t *testing.T) {
 				},
 				Status: cagipv1.ResourceQuotaClaimStatus{Phase: cagipv1.PhaseRejected},
 				Spec: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("1k"),
-					v1.ResourceMemory: resource.MustParse("1Gi"),
+					v1.ResourceCPU:     resource.MustParse("1k"),
+					v1.ResourceMemory:  resource.MustParse("1Gi"),
+					"count/jobs.batch": resource.MustParse("5"),
 				},
 			},
 			expect: false,
@@ -223,8 +230,9 @@ func TestHasClaimWithoutStatus(t *testing.T) {
 				},
 				Status: cagipv1.ResourceQuotaClaimStatus{Phase: cagipv1.PhaseAccepted},
 				Spec: v1.ResourceList{
-					v1.ResourceCPU:    resource.MustParse("1k"),
-					v1.ResourceMemory: resource.MustParse("1Gi"),
+					v1.ResourceCPU:     resource.MustParse("1k"),
+					v1.ResourceMemory:  resource.MustParse("1Gi"),
+					"count/jobs.batch": resource.MustParse("5"),
 				},
 			},
 			expect: false,
