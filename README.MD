@@ -127,127 +127,10 @@ kubectl apply -f https://raw.githubusercontent.com/ca-gip/kotary/master/artifact
 kubectl apply -f https://raw.githubusercontent.com/ca-gip/kotary/master/artifacts/metrics.yml
 ```
 
-## Getting Started
+# Contributing
 
-### Update a ResourceQuota
-
-To update a _ResourceQuotas_ you will have to create a _ResourceQuotaClaims_ with specification for CPU and Memory.
-You can use the same units as the one available in Kubernetes, 
-please refer to the [official documentation](https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-memory-cpu-namespace/)
-
-#### Example
-
-```bash
-cat <<EOF | kubectl apply -n demo-ns -f -
-apiVersion: cagip.github.com/v1
-kind: ResourceQuotaClaim
-metadata:
-  name: demo
-spec:
-  memory: 20Gi
-  cpu: 5
-EOF
-```
-
-#### Status
-
-After creating a _ResourceQuotaClaims_ there are three possibilities:
-* __Accepted__ : The claim will be deleted, and the modifications are applied to the _ResourceQuota_
-* __Rejected__ : It was not possible to accept the modification the claim show a status "REJECTED" with details.
-* __Pending__ : The claim is requesting less resources than what is currently requested on the namespace, the claim will be accepted once it's possible to downscale
-
-##### Example of a rejected claim
-
-```bash
-$ kubectl get quotaclaim
-NAME   CPU   RAM    STATUS     DETAILS
-demo   5     20Gi   REJECTED   Exceeded Memory allocation limit claiming 20Gi but limited to 18Gi
-```
-
-##### Example of a pending claim
-
-```bash
-$ kubectl get quotaclaim
-NAME   CPU   RAM    STATUS     DETAILS
-demo   5     16Gi   PENDING    Awaiting lower CPU consumption claiming 16Gi but current total of CPU request is 18Gi
-```
-
-### Default claim
-
-If you are using the default claim policy, namespace will automatically receive a claim and if all the verifications 
-pass a managed-quota will be applied.
-
-```bash
-$ kubectl get resourcequota
-NAME            CREATED AT
-managed-quota   2020-01-24T08:31:32Z
-```
-
-## Plan
-
-Implementing _ResourceQuota_ when you already have running workload on your cluster can be a tedious task.
-To help you get started you can use our cli [kotaplan](https://github.com/ca-gip/kotaplan). It will enable to test various scenarios beforehand
-by simulating how the quota could be implemented according to the desired settings.
-
-Here is a quick example
-
-```bash
-$ kotaplan -label quota=managed -cpuover 0.95 -memover 0.95 -memratio 0.33 -cpuratio 0.33
-+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Namespaces Details                                                                                                                                                                    |
-+--------------+------+---------+-----------------+---------------+---------+-----------------+---------------+-------------+---------------------------+-------------------------------+
-| NAMESPACE    | PODS | MEM REQ | CURRENT MEM USE | MEM REQ USAGE | CPU REQ | CURRENT CPU USE | CPU REQ USAGE | FIT DEFAULT | RESPECT MAX ALLOCATION NS | SPEC                          |
-+--------------+------+---------+-----------------+---------------+---------+-----------------+---------------+-------------+---------------------------+-------------------------------+
-| team-1-dev   |   14 | 7GiB    | 859.4MiB        | 11.9897 %     |    2800 |               6 | 0.2143 %      | false       | true                      | CPU : 3360m    MEM: 8.4GiB    |
-| team-1-int   |   14 | 7GiB    | 852MiB          | 11.8868 %     |    2800 |               0 | 0 %           | false       | true                      | CPU : 3360m    MEM: 8.4GiB    |
-| team-1-prd   |   16 | 8GiB    | 1.125GiB        | 14.0568 %     |    3200 |               0 | 0 %           | false       | true                      | CPU : 3840m    MEM: 9.6GiB    |
-| team-2-dev   |   16 | 8GiB    | 1.119GiB        | 13.9935 %     |    3200 |               0 | 0 %           | false       | true                      | CPU : 3840m    MEM: 9.6GiB    |
-| team-2-dev   |    8 | 4GiB    | 531.4MiB        | 12.9745 %     |    1600 |               0 | 0 %           | false       | true                      | CPU : 1920m    MEM: 6GiB      |
-| team-2-dev   |   28 | 9GiB    | 1.033GiB        | 11.4748 %     |    3600 |               6 | 0.1667 %      | false       | true                      | CPU : 4320m    MEM: 10.8GiB   |
-| team-3-dev   |    0 | 0B      | 0B              | 0 %           |       0 |               0 | 0 %           | true        | true                      | CPU : 1000m    MEM: 6GiB      |
-| team-3-prd   |    0 | 0B      | 0B              | 0 %           |       0 |               0 | 0 %           | true        | true                      | CPU : 1000m    MEM: 6GiB      |
-+--------------+------+---------+-----------------+---------------+---------+-----------------+---------------+-------------+---------------------------+-------------------------------+
-| 8            |   96 |         |                 |               |         |                 |               |             |                           | CPU : 22692M    MEM: 64.8 GIB |
-+--------------+------+---------+-----------------+---------------+---------+-----------------+---------------+-------------+---------------------------+-------------------------------+
-+-------------------------------------------------------------+
-| Summary                                                     |
-+-------------------------------------------------------------+
-| Number of nodes               8                             |
-| Available resources (real)    CPU : 64000m    MEM: 250.5GiB |
-| Available resources (commit)  CPU : 60800m    MEM: 238GiB   |
-| Max per NS                    CPU : 21120m    MEM: 82.67GiB |
-+-------------------------------------------------------------+
-| RESULT                        OK                            |
-+-------------------------------------------------------------+
-```
-
-## Manage
-
-To help you manage effectively your _ResourceQuotas_ you can use the provided Granafa dashboard. You will be able
-to set it up according to your configuration by modifying the dashboard variable.
-
-### Global
-
-The global section will enable users to check the current running configuration (manual) to size accordingly their claims.
-It also shows what is currently available, reserved and claimable in terms of resources. 
-
-![grafana_global](assets/grafana_global.png)
-
-
-### Namespaces
-
-This section list all the managed namespaces to give a rough idea of what is currently use by running containers. It allows to 
-rapidly checks which quota should be increased or decreased.
-
-![grafana_namespaces](assets/grafana_namespaces.png)
-
-### Namespace Details
-
-This section shows a detailed view of the Memory and CPU consumption on a particular namespace. It allows to visually check
-what the specifications of the quota, the total amount of request made by containers and their real consumption.
-
-![grafana_namespace_details](assets/grafana_namespace_details.png)
-
+- [Contributing to kotary](https://github.com/ca-gip/kotary/blob/master/CONTRIBUTING.md).
+ 
 
  <hr/>
 <p align=center  style="background-color:#333333 !important;">
@@ -257,8 +140,3 @@ what the specifications of the quota, the total amount of request made by contai
   <img align="center" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png" alt="drawing" width="100"/>
   </a>
 </p>
-
-## Versioning 
-
-Since version v1.24.0, we have decided to modify the naming of versions for ease of reading and understanding.
-Example: v1.24.0 means that the operator was developed for Kubernetes version 1.24 and that the last 0 corresponds to the various patches we have made to the operator.
