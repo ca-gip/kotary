@@ -6,3 +6,4 @@ metadata:
 spec:
   memory: 24Gi
   cpu: 14000
+  count/jobs.batch: 12

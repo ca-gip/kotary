@@ -28,6 +28,9 @@ spec:
                 memory:
                   x-kubernetes-int-or-string: true
                   pattern: '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'
+                count/jobs.batch:
+                  pattern: ^[0-9]*$
+                  x-kubernetes-int-or-string: true
             status:
               type: object
               properties:
@@ -46,6 +49,10 @@ spec:
           type: string
           description: Desired amount of RAM
           jsonPath: .spec.memory
+        - description: Desired maximum number of jobs
+          jsonPath: .spec.count/jobs\.batch
+          name: MAX JOB COUNT
+          type: string
         - name: Status
           type: string
           description: Status of the claim
