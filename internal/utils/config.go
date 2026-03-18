@@ -74,7 +74,7 @@ func (c *ConfigurationManager) generateDefaultSettings() *Config {
 	klog.V(6).Info("Default setting will not select any Namespaces to provision default ResourceQuotaClaim")
 	klog.V(6).Info("Default will not apply over commitment to Nodes available resources")
 
-	return &Config{
+	defaultConfig := &Config{
 		DefaultClaimSpec:         *claimSpecByDefault,
 		RatioMaxAllocationMemory: defaultMaxAllocationMemory,
 		RatioMaxAllocationCPU:    defaultMaxAllocationCPU,
@@ -83,6 +83,10 @@ func (c *ConfigurationManager) generateDefaultSettings() *Config {
 		MaxJobsLimitNS:           defaultMaxJobsLimitNS,
 		MaxJobsLimitCluster:      defaultMaxJobsLimitCluster,
 	}
+
+	setKotaryMetrics(defaultConfig)
+
+	return defaultConfig
 
 }
 
@@ -94,6 +98,7 @@ func (c *ConfigurationManager) Load() {
 	if err != nil {
 		klog.Infof("Could not load namespace via %s ", nsSecretPath)
 		c.Conf = *c.generateDefaultSettings()
+	
 		return
 	}
 
@@ -192,9 +197,23 @@ func parseConfigMap(configMap *v1.ConfigMap) (parsed *Config, err error) {
 		MaxJobsLimitNS:           maxJobsLimitNS,
 		MaxJobsLimitCluster:      maxJobsLimitCluster,
 	}
-
+	
 	klog.Infof("Loaded config map : %+v\n", parsed)
+
+	setKotaryMetrics(parsed)
 
 	return
 
+}
+
+func setKotaryMetrics(kotaryConfig *Config) {
+
+	MaxJobsLimitNSGauge.Set(float64(kotaryConfig.MaxJobsLimitNS))
+	MaxJobsLimitClusterGauge.Set(float64(kotaryConfig.MaxJobsLimitCluster))
+	RatioMaxAllocationCPUGauge.Set(float64(kotaryConfig.RatioMaxAllocationCPU))
+	RatioMaxAllocationMemoryGauge.Set(float64(kotaryConfig.RatioMaxAllocationMemory))
+	RatioOverCommitCPUGauge.Set(float64(kotaryConfig.RatioOverCommitCPU))
+	RatioOverCommitMemoryGauge.Set(float64(kotaryConfig.RatioOverCommitMemory))
+
+	klog.Infof("Kotary metrics updated from configuration")
 }
