@@ -97,8 +97,7 @@ func (c *ConfigurationManager) Load() {
 
 	if err != nil {
 		klog.Infof("Could not load namespace via %s ", nsSecretPath)
-		c.Conf = *c.generateDefaultSettings()
-	
+		c.Conf = *c.generateDefaultSettings()	
 		return
 	}
 
@@ -197,11 +196,9 @@ func parseConfigMap(configMap *v1.ConfigMap) (parsed *Config, err error) {
 		MaxJobsLimitNS:           maxJobsLimitNS,
 		MaxJobsLimitCluster:      maxJobsLimitCluster,
 	}
-	
+
 	klog.Infof("Loaded config map : %+v\n", parsed)
-
 	setKotaryMetrics(parsed)
-
 	return
 
 }
@@ -217,3 +214,4 @@ func setKotaryMetrics(kotaryConfig *Config) {
 
 	klog.Infof("Kotary metrics updated from configuration")
 }
+
