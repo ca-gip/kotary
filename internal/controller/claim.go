@@ -263,24 +263,24 @@ func (c *Controller) checkAllocationLimit(claim *cagipv1.ResourceQuotaClaim, ava
 func (c *Controller) checkResourceFit(claim *cagipv1.ResourceQuotaClaim, availableResources *v1Core.ResourceList, reservedResources *v1Core.ResourceList) string {
 
 	// Apply OverProvisioning
-	overCommittedResources := c.applyOverProvisioning(availableResources)
+	overCommittedResources := c.applyOverProvisioning(&(*availableResources))
 
 	// Calculate
 	freeResources := quota.SubtractWithNonNegativeResult(*overCommittedResources, *reservedResources)
 
 	// Difference between the freeResources and the claim
 	// If diff is different than zero there is enough capacity to accept the claim
-	diff := quota.SubtractWithNonNegativeResult(freeResources, claim.Spec)
+	diff := quota.SubtractWithNonNegativeResult(freeResources, v1Core.ResourceList(claim.Spec))
 
 	// ResourceQuotaClaims cannot fit because of Memory
-	if diff.Memory().IsZero() {
+	if diff.Memory().Sign() <= 0 {
 		return fmt.Sprintf(utils.MessageRejectedMemory,
 			claim.Spec.Memory().String(),
 			utils.BytesSize(float64(freeResources.Memory().Value())))
 	}
 
 	// ResourceQuotaClaims cannot fit because of CPU
-	if diff.Cpu().IsZero() {
+	if claim.Spec.Cpu().MilliValue() > freeResources.Cpu().MilliValue() {
 		return fmt.Sprintf(utils.MessageRejectedCPU,
 			claim.Spec.Cpu().String(),
 			freeResources.Cpu().String())
