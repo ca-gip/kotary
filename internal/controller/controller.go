@@ -90,7 +90,7 @@ func NewController(
 	utilruntime.Must(resourcequotaclaimcheme.AddToScheme(scheme.Scheme))
 	klog.V(4).Info("Creating event broadcaster")
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(klog.Infof)
+	eventBroadcaster.StartStructuredLogging(0)
 	eventBroadcaster.StartRecordingToSink(&typedcorev1.EventSinkImpl{Interface: namespaceclientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: utils.ControllerName})
 
@@ -155,23 +155,22 @@ func NewController(
 func (c *Controller) SharedInformersState() error {
 
 	if synced := c.namespacesSynced(); !synced {
-		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "Namespace"))
+		return fmt.Errorf(utils.SharedInformerNotSync, "Namespace")
 	}
 
 	if synced := c.resourceQuotaSynced(); !synced {
-		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "ResourceQuota"))
+		return fmt.Errorf(utils.SharedInformerNotSync, "ResourceQuota")
 	}
 
 	if synced := c.podsSynced(); !synced {
-		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "Pods"))
+		return fmt.Errorf(utils.SharedInformerNotSync, "Pods")
 	}
 
 	if synced := c.resourceQuotaClaimSynced(); !synced {
-		return fmt.Errorf(fmt.Sprintf(utils.SharedInformerNotSync, "ResourceQuotaClaim"))
+		return fmt.Errorf(utils.SharedInformerNotSync, "ResourceQuotaClaim")
 	}
 
 	return nil
-
 }
 
 // Run will set up the event handlers for types we are interested in, as well
@@ -367,7 +366,7 @@ func (c *Controller) handleObject(obj interface{}) {
 			klog.Infof("ignoring orphaned object '%s' of ResourceQuotaClaims '%s'", object.GetSelfLink(), ownerRef.Name)
 			return
 		}
-		klog.Infof(fmt.Sprintf("Processing claim: %+v", claim))
+		klog.Infof("Processing claim: %+v", claim)
 		c.enqueueResourceQuotaClaim(claim)
 		return
 	}
