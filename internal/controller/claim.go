@@ -270,7 +270,7 @@ func (c *Controller) checkResourceFit(claim *cagipv1.ResourceQuotaClaim, availab
 
 	// Difference between the freeResources and the claim
 	// If diff is different than zero there is enough capacity to accept the claim
-	diff := quota.SubtractWithNonNegativeResult(freeResources, v1Core.ResourceList(claim.Spec))
+	diff := quota.SubtractWithNonNegativeResult(freeResources, claim.Spec)
 
 	// ResourceQuotaClaims cannot fit because of Memory
 	if diff.Memory().IsZero() {
