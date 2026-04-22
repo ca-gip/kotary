@@ -57,7 +57,6 @@ ex: a namespace cannot claim more that a 1/3 of the cluster
 is claimable compared to the actual resources. 
 ex: In a development environment you could choose to allow reserving more resources than what is actually usable in reality.
 
-
 In order to facilitate the adaption of _ResourceQuotaClaims_ it is possible to enforce a default claim for namespaces.
 The feature will be activated on namespace that contains the label __quota=managed__.
 
@@ -84,20 +83,16 @@ kubectl apply -f https://raw.githubusercontent.com/ca-gip/kotary/master/artifact
 
 | Name                           | Description                                                | Mandatory   | Type           | Default                  |
 | :--------------                | :--------------------------------------------------------: | :---------:  | :-------------: |:---------------------- |
-|  **defaultClaimSpec**          |  *Default claim that will be added to a watched Namespace* | `no`        | `ResourceList` | cpu:2 <br /> memory: 6Gi <br /> count/jobs.batch: 5 |
+|  **defaultClaimSpec**          |  *Default claim that will be added to a watched Namespace* | `no`        | `ResourceList` | cpu:2 <br /> memory: 6Gi |
 |  **ratioMaxAllocationMemory**  |  *Maximum amount of Memory claimable by a Namespace*       | `no`        | `Float`        | 1                        |
 |  **ratioMaxAllocationCPU**     |  *Maximum amount of CPU claimable by a Namespace*          | `no`        | `Float`        | 1                        |
 |  **ratioOverCommitMemory**     |  *Memory over-commitment*                                  | `no`        | `Float`        | 1                        |
 |  **ratioOverCommitCPU**        |  *CPU over-commitment*                                     | `no`        | `Float`        | 1                        |
-|  **maxcountjobs**                                                                            | `yes`       | `int`          |
-
-The `maxcountjobs` parameter is used to specify the maximum number of concurrent jobs that can be executed at any given time. This setting is particularly useful for controlling resource utilization and ensuring that the system does not become overloaded with too many simultaneous tasks.
-
 
 ##### Example
 
 In the following sample configuration we set :
- * A default claim of 2 CPU , 10Gi of Memory and 5 jobs
+ * A default claim of 2 CPU and 10Gi of Memory
  * 33% of total amount of resource can be claim by a namespace
  * An over-commit of 130%
 
@@ -109,12 +104,10 @@ data:
   defaultClaimSpec: |
     cpu: "2"
     memory: "10Gi"
-    count/jobs.batch: 5
   ratioMaxAllocationMemory: "0.33"
   ratioMaxAllocationCPU: "0.33"
   ratioOverCommitMemory: "1.3"
   ratioOverCommitCPU: "1.3"
-  maxCountJobs: "5"
 metadata:
   name: kotary-config
 EOF
@@ -138,7 +131,7 @@ kubectl apply -f https://raw.githubusercontent.com/ca-gip/kotary/master/artifact
 
 ### Update a ResourceQuota
 
-To update a _ResourceQuotas_ you will have to create a _ResourceQuotaClaims_ with specification for CPU, Memory and job count.
+To update a _ResourceQuotas_ you will have to create a _ResourceQuotaClaims_ with specification for CPU and Memory.
 You can use the same units as the one available in Kubernetes, 
 please refer to the [official documentation](https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/quota-memory-cpu-namespace/)
 
@@ -153,7 +146,6 @@ metadata:
 spec:
   memory: 20Gi
   cpu: 5
-  count/jobs.batch: "100"
 EOF
 ```
 
@@ -168,16 +160,16 @@ After creating a _ResourceQuotaClaims_ there are three possibilities:
 
 ```bash
 $ kubectl get quotaclaim
-NAME   CPU   RAM  MAX JOB COUNT  STATUS     DETAILS
-demo   5     20Gi     100        REJECTED   Exceeded Memory allocation limit claiming 20Gi but limited to 18Gi
+NAME   CPU   RAM    STATUS     DETAILS
+demo   5     20Gi   REJECTED   Exceeded Memory allocation limit claiming 20Gi but limited to 18Gi
 ```
 
 ##### Example of a pending claim
 
 ```bash
 $ kubectl get quotaclaim
-NAME   CPU   RAM   MAX JOB COUNT  STATUS     DETAILS
-demo   5     16Gi        5         PENDING    Awaiting lower CPU consumption claiming 16Gi but current total of CPU request is 18Gi
+NAME   CPU   RAM    STATUS     DETAILS
+demo   5     16Gi   PENDING    Awaiting lower CPU consumption claiming 16Gi but current total of CPU request is 18Gi
 ```
 
 ### Default claim

@@ -739,9 +739,8 @@ func TestTotalResourceQuota(t *testing.T) {
 					},
 					Spec: v1.ResourceQuotaSpec{
 						Hard: v1.ResourceList{
-							v1.ResourceMemory:  resource.MustParse("8Gi"),
-							v1.ResourceCPU:     resource.MustParse("3k"),
-							"count/jobs.batch": resource.MustParse("5"),
+							v1.ResourceMemory: resource.MustParse("8Gi"),
+							v1.ResourceCPU:    resource.MustParse("3k"),
 						},
 					},
 				},
@@ -751,9 +750,8 @@ func TestTotalResourceQuota(t *testing.T) {
 					},
 					Spec: v1.ResourceQuotaSpec{
 						Hard: v1.ResourceList{
-							v1.ResourceMemory:  resource.MustParse("8Gi"),
-							v1.ResourceCPU:     resource.MustParse("3k"),
-							"count/jobs.batch": resource.MustParse("5"),
+							v1.ResourceMemory: resource.MustParse("8Gi"),
+							v1.ResourceCPU:    resource.MustParse("3k"),
 						},
 					},
 				},
@@ -763,17 +761,15 @@ func TestTotalResourceQuota(t *testing.T) {
 					},
 					Spec: v1.ResourceQuotaSpec{
 						Hard: v1.ResourceList{
-							v1.ResourceMemory:  resource.MustParse("8Gi"),
-							v1.ResourceCPU:     resource.MustParse("3k"),
-							"count/jobs.batch": resource.MustParse("5"),
+							v1.ResourceMemory: resource.MustParse("8Gi"),
+							v1.ResourceCPU:    resource.MustParse("3k"),
 						},
 					},
 				},
 			},
 			expect: &v1.ResourceList{
-				v1.ResourceMemory:  resource.MustParse("16Gi"),
-				v1.ResourceCPU:     resource.MustParse("6k"),
-				"count/jobs.batch": resource.MustParse("5"),
+				v1.ResourceMemory: resource.MustParse("16Gi"),
+				v1.ResourceCPU:    resource.MustParse("6k"),
 			},
 		},
 		"1 quota": {
@@ -789,17 +785,15 @@ func TestTotalResourceQuota(t *testing.T) {
 					},
 					Spec: v1.ResourceQuotaSpec{
 						Hard: v1.ResourceList{
-							v1.ResourceMemory:  resource.MustParse("8Gi"),
-							v1.ResourceCPU:     resource.MustParse("3k"),
-							"count/jobs.batch": resource.MustParse("5"),
+							v1.ResourceMemory: resource.MustParse("8Gi"),
+							v1.ResourceCPU:    resource.MustParse("3k"),
 						},
 					},
 				},
 			},
 			expect: &v1.ResourceList{
-				v1.ResourceMemory:  resource.MustParse("8Gi"),
-				v1.ResourceCPU:     resource.MustParse("3k"),
-				"count/jobs.batch": resource.MustParse("5"),
+				v1.ResourceMemory: resource.MustParse("8Gi"),
+				v1.ResourceCPU:    resource.MustParse("3k"),
 			},
 		},
 	}
@@ -830,9 +824,8 @@ func TestDeleteResourceQuotaClaim(t *testing.T) {
 				Namespace: metav1.NamespaceDefault,
 			},
 			Spec: v1.ResourceList{
-				v1.ResourceCPU:     resource.MustParse("1"),
-				v1.ResourceMemory:  resource.MustParse("1Mi"),
-				"count/jobs.batch": resource.MustParse("3"),
+				v1.ResourceCPU:    resource.MustParse("1"),
+				v1.ResourceMemory: resource.MustParse("1Mi"),
 			},
 		}
 		f := newFixture(t)
@@ -991,150 +984,4 @@ func TestCanDownscaleQuota(t *testing.T) {
 		})
 	}
 
-}
-
-func TestCheckMaxCountJobs(t *testing.T) {
-	testCases := map[string]struct {
-		claim        *cagipv1.ResourceQuotaClaim
-		maxCountJobs int
-		expectMsg    string
-	}{
-		"job count within limit": {
-			claim: &cagipv1.ResourceQuotaClaim{
-				Spec: v1.ResourceList{
-					"count/jobs.batch": resource.MustParse("3"),
-				},
-			},
-			maxCountJobs: 5,
-			expectMsg:    utils.EmptyMsg,
-		},
-		"job count exceeds limit": {
-			claim: &cagipv1.ResourceQuotaClaim{
-				Spec: v1.ResourceList{
-					"count/jobs.batch": resource.MustParse("6"),
-				},
-			},
-			maxCountJobs: 5,
-			expectMsg:    "requested max count jobs (6) cannot exceed max value (5)",
-		},
-		"job count equals limit": {
-			claim: &cagipv1.ResourceQuotaClaim{
-				Spec: v1.ResourceList{
-					"count/jobs.batch": resource.MustParse("5"),
-				},
-			},
-			maxCountJobs: 5,
-			expectMsg:    utils.EmptyMsg,
-		},
-		"job count not specified in claim": {
-			claim: &cagipv1.ResourceQuotaClaim{
-				Spec: v1.ResourceList{},
-			},
-			maxCountJobs: 5,
-			expectMsg:    utils.EmptyMsg,
-		},
-	}
-
-	for testName, testCase := range testCases {
-		t.Run(testName, func(t *testing.T) {
-			f := newFixture(t)
-			c, _, _, _, _, _ := f.newController()
-
-			resultMsg := c.checkMaxCountJobs(testCase.claim, testCase.maxCountJobs)
-
-			assert.Equal(t, resultMsg, testCase.expectMsg)
-		})
-	}
-}
-func TestCheckMaxCountJobsCluster(t *testing.T) {
-	testCases := map[string]struct {
-		claim               *cagipv1.ResourceQuotaClaim
-		maxCountJobsCluster int
-		managedQuotas       []*v1.ResourceQuota
-		expectMsg           string
-	}{
-		"job count within cluster limit": {
-			claim: &cagipv1.ResourceQuotaClaim{
-				Spec: v1.ResourceList{
-					"count/jobs.batch": resource.MustParse("3"),
-				},
-			},
-			maxCountJobsCluster: 10,
-			managedQuotas: []*v1.ResourceQuota{
-				{
-					Spec: v1.ResourceQuotaSpec{
-						Hard: v1.ResourceList{
-							"count/jobs.batch": resource.MustParse("5"),
-						},
-					},
-				},
-			},
-			expectMsg: utils.EmptyMsg,
-		},
-		"job count exceeds cluster limit": {
-			claim: &cagipv1.ResourceQuotaClaim{
-				Spec: v1.ResourceList{
-					"count/jobs.batch": resource.MustParse("6"),
-				},
-			},
-			maxCountJobsCluster: 10,
-			managedQuotas: []*v1.ResourceQuota{
-				{
-					Spec: v1.ResourceQuotaSpec{
-						Hard: v1.ResourceList{
-							"count/jobs.batch": resource.MustParse("5"),
-						},
-					},
-				},
-			},
-			expectMsg: "Cluster max job count exceeded: Max 10 jobs allowed.",
-		},
-		"job count equals cluster limit": {
-			claim: &cagipv1.ResourceQuotaClaim{
-				Spec: v1.ResourceList{
-					"count/jobs.batch": resource.MustParse("5"),
-				},
-			},
-			maxCountJobsCluster: 10,
-			managedQuotas: []*v1.ResourceQuota{
-				{
-					Spec: v1.ResourceQuotaSpec{
-						Hard: v1.ResourceList{
-							"count/jobs.batch": resource.MustParse("5"),
-						},
-					},
-				},
-			},
-			expectMsg: utils.EmptyMsg,
-		},
-		"no job count in claim": {
-			claim: &cagipv1.ResourceQuotaClaim{
-				Spec: v1.ResourceList{},
-			},
-			maxCountJobsCluster: 10,
-			managedQuotas: []*v1.ResourceQuota{
-				{
-					Spec: v1.ResourceQuotaSpec{
-						Hard: v1.ResourceList{
-							"count/jobs.batch": resource.MustParse("5"),
-						},
-					},
-				},
-			},
-			expectMsg: utils.EmptyMsg,
-		},
-	}
-
-	for testName, testCase := range testCases {
-		t.Run(testName, func(t *testing.T) {
-			f := newFixture(t)
-			for _, quota := range testCase.managedQuotas {
-				f.resourceQuotaLister = append(f.resourceQuotaLister, quota)
-			}
-			c, _, _, _, _, _ := f.newController()
-
-			resultMsg := c.checkMaxCountJobsCluster(testCase.claim, testCase.maxCountJobsCluster)
-			assert.Equal(t, resultMsg, testCase.expectMsg)
-		})
-	}
 }
