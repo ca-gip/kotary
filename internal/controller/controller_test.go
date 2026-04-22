@@ -182,16 +182,19 @@ func (f *fixture) newController() (*Controller, kubeinformers.SharedInformerFact
 		DefaultClaimSpec: v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("2"),
 			v1Core.ResourceMemory: resource.MustParse("6Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		},
 		RatioMaxAllocationMemory: 0.33,
 		RatioMaxAllocationCPU:    0.33,
 		RatioOverCommitMemory:    1,
 		RatioOverCommitCPU:       1,
+		MaxJobsLimitNS:           50,
+		MaxJobsLimitCluster:      50,
 	}
 
 	nsI := kubeinformers.NewSharedInformerFactory(f.namespaceclientset, noResyncPeriodFunc())
-	nodeI := kubeinformers.NewSharedInformerFactory(f.namespaceclientset, noResyncPeriodFunc())
-	rqI := kubeinformers.NewSharedInformerFactory(f.namespaceclientset, noResyncPeriodFunc())
+	nodeI := kubeinformers.NewSharedInformerFactory(f.nodesclientset, noResyncPeriodFunc())
+	rqI := kubeinformers.NewSharedInformerFactory(f.resourcequotaclientset, noResyncPeriodFunc())
 	poI := kubeinformers.NewSharedInformerFactory(f.podsclientset, noResyncPeriodFunc())
 	rqcI := informers.NewSharedInformerFactory(f.resourcequotaclaimclientset, noResyncPeriodFunc())
 
@@ -527,6 +530,7 @@ func TestClaimCreateNewQuota(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
 			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -549,6 +553,7 @@ func TestClaimCreateNewQuota(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("900m"),
 			v1Core.ResourceMemory: resource.MustParse("7Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -571,6 +576,7 @@ func TestClaimCreateNewQuota(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("2.5"),
 			v1Core.ResourceMemory: resource.MustParse("20Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -593,6 +599,7 @@ func TestClaimCreateNewQuota(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
 			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -617,6 +624,7 @@ func TestClaimCreateNewQuota(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
 			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -652,15 +660,17 @@ func TestClaimUpdateQuota(t *testing.T) {
 				Hard: v1Core.ResourceList{
 					v1Core.ResourceCPU:    resource.MustParse("200m"),
 					v1Core.ResourceMemory: resource.MustParse("1Gi"),
+					"count/jobs.batch":    resource.MustParse("0"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqcobjects, managedQuota)
+		f.rqobjects = append(f.rqobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
 			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+			"count/jobs.batch":    resource.MustParse("0"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -690,20 +700,27 @@ func TestClaimUpdateQuota(t *testing.T) {
 				Hard: v1Core.ResourceList{
 					v1Core.ResourceCPU:    resource.MustParse("200m"),
 					v1Core.ResourceMemory: resource.MustParse("1Gi"),
+					"count/jobs.batch":    resource.MustParse("5"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqcobjects, managedQuota)
+		f.rqobjects = append(f.rqobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("900m"),
 			v1Core.ResourceMemory: resource.MustParse("7Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
 		// Expected Actions
-		expResourceQuota := newResourceQuota(claim)
+		claimExpected := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
+			v1Core.ResourceCPU:    resource.MustParse("900m"),
+			v1Core.ResourceMemory: resource.MustParse("7Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
+		})
+		expResourceQuota := newResourceQuota(claimExpected)
 		f.expectUpdateResourceQuotaAction(expResourceQuota)
 		f.expectDeleteResourceQuotaClaimAction(claim)
 
@@ -727,15 +744,17 @@ func TestClaimUpdateQuota(t *testing.T) {
 				Hard: v1Core.ResourceList{
 					v1Core.ResourceCPU:    resource.MustParse("200m"),
 					v1Core.ResourceMemory: resource.MustParse("1Gi"),
+					"count/jobs.batch":    resource.MustParse("5"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqcobjects, managedQuota)
+		f.rqobjects = append(f.rqobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("2.5"),
 			v1Core.ResourceMemory: resource.MustParse("20Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -764,15 +783,17 @@ func TestClaimUpdateQuota(t *testing.T) {
 				Hard: v1Core.ResourceList{
 					v1Core.ResourceCPU:    resource.MustParse("200m"),
 					v1Core.ResourceMemory: resource.MustParse("1Gi"),
+					"count/jobs.batch":    resource.MustParse("5"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqcobjects, managedQuota)
+		f.rqobjects = append(f.rqobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
 			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -803,15 +824,17 @@ func TestClaimUpdateQuota(t *testing.T) {
 				Hard: v1Core.ResourceList{
 					v1Core.ResourceCPU:    resource.MustParse("200m"),
 					v1Core.ResourceMemory: resource.MustParse("1Gi"),
+					"count/jobs.batch":    resource.MustParse("5"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqcobjects, managedQuota)
+		f.rqobjects = append(f.rqobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
 			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -850,7 +873,7 @@ func TestClaimPending(t *testing.T) {
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqcobjects, managedQuota)
+		f.rqobjects = append(f.rqobjects, managedQuota)
 
 		// Scheduled Pods
 		pods := newTestPods(4, &v1Core.ResourceList{
@@ -879,6 +902,7 @@ func TestClaimPending(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("600m"),
 			v1Core.ResourceMemory: resource.MustParse("5Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -907,11 +931,12 @@ func TestClaimPending(t *testing.T) {
 				Hard: v1Core.ResourceList{
 					v1Core.ResourceCPU:    resource.MustParse("800m"),
 					v1Core.ResourceMemory: resource.MustParse("6Gi"),
+					"count/jobs.batch":    resource.MustParse("5"),
 				},
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqcobjects, managedQuota)
+		f.rqobjects = append(f.rqobjects, managedQuota)
 		// Scheduled Pods
 		pods := newTestPods(3, &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("250m"),
@@ -924,6 +949,7 @@ func TestClaimPending(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("600m"),
 			v1Core.ResourceMemory: resource.MustParse("6Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -949,6 +975,7 @@ func TestClaimRejected(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
 			v1Core.ResourceMemory: resource.MustParse("10Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -972,6 +999,7 @@ func TestClaimRejected(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("500m"),
 			v1Core.ResourceMemory: resource.MustParse("2Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -996,11 +1024,13 @@ func TestClaimRejected(t *testing.T) {
 			newTestResourceQuota("otherns", "managed", &v1Core.ResourceList{
 				v1Core.ResourceCPU:    resource.MustParse("800m"),
 				v1Core.ResourceMemory: resource.MustParse("6Gi"),
+				"count/jobs.batch":    resource.MustParse("5"),
 			}))
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("100m"),
 			v1Core.ResourceMemory: resource.MustParse("2.50Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -1024,11 +1054,13 @@ func TestClaimRejected(t *testing.T) {
 			newTestResourceQuota("otherns", "managed", &v1Core.ResourceList{
 				v1Core.ResourceCPU:    resource.MustParse("800m"),
 				v1Core.ResourceMemory: resource.MustParse("6Gi"),
+				"count/jobs.batch":    resource.MustParse("5"),
 			}))
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
 			v1Core.ResourceMemory: resource.MustParse("1.8Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -1051,6 +1083,7 @@ func TestClaimRejected(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
 			v1Core.ResourceMemory: resource.MustParse("10Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 		f.rqcobjects = append(f.rqcobjects, claim)
@@ -1087,6 +1120,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 		expectedClaim := newTestResourceQuotaClaim("default", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("2"),
 			v1Core.ResourceMemory: resource.MustParse("6Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.expectCreateResourceQuotaClaimAction(expectedClaim)
 
@@ -1150,6 +1184,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("2"),
 			v1Core.ResourceMemory: resource.MustParse("6Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.resourceQuotaClaimLister = append(f.resourceQuotaClaimLister, claim)
 
@@ -1179,6 +1214,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 		expectedClaim := newTestResourceQuotaClaim("default", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("2"),
 			v1Core.ResourceMemory: resource.MustParse("6Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.expectCreateResourceQuotaClaimAction(expectedClaim)
 
@@ -1202,6 +1238,7 @@ func TestAddDefaultClaimToNS(t *testing.T) {
 		expectedClaim := newTestResourceQuotaClaim("default", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("2"),
 			v1Core.ResourceMemory: resource.MustParse("6Gi"),
+			"count/jobs.batch":    resource.MustParse("5"),
 		})
 		f.expectCreateResourceQuotaClaimAction(expectedClaim)
 		// Inject client error

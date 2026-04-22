@@ -2,7 +2,8 @@ package utils
 
 import (
 	"context"
-	"io/ioutil"
+
+	"os"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -21,11 +22,14 @@ const (
 	defaultOverCommitMemory    = 1
 	defaultOverCommitCPU       = 1
 	nsSecretPath               = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+	defaultMaxJobsLimitNS      = 50
+	defaultMaxJobsLimitCluster = 50
 )
 
 var claimSpecByDefault = &v1.ResourceList{
-	v1.ResourceCPU:    resource.MustParse("2"),
-	v1.ResourceMemory: resource.MustParse("6Gi"),
+	v1.ResourceCPU:     resource.MustParse("2"),
+	v1.ResourceMemory:  resource.MustParse("6Gi"),
+	"count/jobs.batch": resource.MustParse("5"),
 }
 
 // Hold the configurations specification
@@ -43,6 +47,11 @@ type Config struct {
 	// Represented as a percentage (could be under 100 to under provision)
 	RatioOverCommitMemory float64 `yaml:"ratioOverCommitMemory"`
 	RatioOverCommitCPU    float64 `yaml:"ratioOverCommitCPU"`
+
+	//Max Count of Jobs
+
+	MaxJobsLimitNS      int `yaml:"maxJobsLimitNS"`
+	MaxJobsLimitCluster int `yaml:"maxJobsLimitCluster"`
 }
 
 // Hold the config and a clienset to retrieve it
@@ -71,6 +80,8 @@ func (c *ConfigurationManager) generateDefaultSettings() *Config {
 		RatioMaxAllocationCPU:    defaultMaxAllocationCPU,
 		RatioOverCommitMemory:    defaultOverCommitMemory,
 		RatioOverCommitCPU:       defaultOverCommitCPU,
+		MaxJobsLimitNS:           defaultMaxJobsLimitNS,
+		MaxJobsLimitCluster:      defaultMaxJobsLimitCluster,
 	}
 
 	setKotaryMetrics(defaultConfig)
@@ -86,7 +97,7 @@ func (c *ConfigurationManager) Load() {
 
 	if err != nil {
 		klog.Infof("Could not load namespace via %s ", nsSecretPath)
-		c.Conf = *c.generateDefaultSettings()
+		c.Conf = *c.generateDefaultSettings()	
 		return
 	}
 
@@ -108,8 +119,7 @@ func (c *ConfigurationManager) Load() {
 
 // Find the namespace where the controller is being executed
 func findExecutionNamespace() (namespace string, err error) {
-
-	nsFile, err := ioutil.ReadFile(nsSecretPath)
+	nsFile, err := os.ReadFile(nsSecretPath)
 
 	namespace = strings.TrimSpace(string(nsFile))
 
@@ -165,12 +175,26 @@ func parseConfigMap(configMap *v1.ConfigMap) (parsed *Config, err error) {
 		defaultClaimSpec = *claimSpecByDefault
 	}
 
+	var maxJobsLimitNS int
+	err = yaml.Unmarshal([]byte(configMap.Data["maxJobsLimitNS"]), &maxJobsLimitNS)
+	if len(configMap.Data["maxJobsLimitNS"]) == 0 || err != nil {
+		maxJobsLimitNS = defaultMaxJobsLimitNS
+	}
+
+	var maxJobsLimitCluster int
+	err = yaml.Unmarshal([]byte(configMap.Data["maxJobsLimitCluster"]), &maxJobsLimitCluster)
+	if len(configMap.Data["maxJobsLimitCluster"]) == 0 || err != nil {
+		maxJobsLimitCluster = defaultMaxJobsLimitCluster
+	}
+
 	parsed = &Config{
 		DefaultClaimSpec:         defaultClaimSpec,
 		RatioMaxAllocationMemory: ratioMaxAllocationMemory,
 		RatioMaxAllocationCPU:    ratioMaxAllocationCPU,
 		RatioOverCommitMemory:    ratioOverCommitMemory,
 		RatioOverCommitCPU:       ratioOverCommitCPU,
+		MaxJobsLimitNS:           maxJobsLimitNS,
+		MaxJobsLimitCluster:      maxJobsLimitCluster,
 	}
 
 	klog.Infof("Loaded config map : %+v\n", parsed)
