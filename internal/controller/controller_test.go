@@ -193,8 +193,8 @@ func (f *fixture) newController() (*Controller, kubeinformers.SharedInformerFact
 	}
 
 	nsI := kubeinformers.NewSharedInformerFactory(f.namespaceclientset, noResyncPeriodFunc())
-	nodeI := kubeinformers.NewSharedInformerFactory(f.nodesclientset, noResyncPeriodFunc())
-	rqI := kubeinformers.NewSharedInformerFactory(f.resourcequotaclientset, noResyncPeriodFunc())
+	nodeI := kubeinformers.NewSharedInformerFactory(f.namespaceclientset, noResyncPeriodFunc())
+	rqI := kubeinformers.NewSharedInformerFactory(f.namespaceclientset, noResyncPeriodFunc())
 	poI := kubeinformers.NewSharedInformerFactory(f.podsclientset, noResyncPeriodFunc())
 	rqcI := informers.NewSharedInformerFactory(f.resourcequotaclaimclientset, noResyncPeriodFunc())
 
@@ -665,7 +665,7 @@ func TestClaimUpdateQuota(t *testing.T) {
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqobjects, managedQuota)
+		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
@@ -705,7 +705,7 @@ func TestClaimUpdateQuota(t *testing.T) {
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqobjects, managedQuota)
+		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("900m"),
@@ -749,7 +749,7 @@ func TestClaimUpdateQuota(t *testing.T) {
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqobjects, managedQuota)
+		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("2.5"),
@@ -788,7 +788,7 @@ func TestClaimUpdateQuota(t *testing.T) {
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqobjects, managedQuota)
+		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
@@ -829,7 +829,7 @@ func TestClaimUpdateQuota(t *testing.T) {
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqobjects, managedQuota)
+		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Test against claim
 		claim := newTestResourceQuotaClaim("test", &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("300m"),
@@ -873,7 +873,7 @@ func TestClaimPending(t *testing.T) {
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqobjects, managedQuota)
+		f.rqobjects = append(f.rqcobjects, managedQuota)
 
 		// Scheduled Pods
 		pods := newTestPods(4, &v1Core.ResourceList{
@@ -936,7 +936,7 @@ func TestClaimPending(t *testing.T) {
 			},
 		}
 		f.resourceQuotaLister = append(f.resourceQuotaLister, managedQuota)
-		f.rqobjects = append(f.rqobjects, managedQuota)
+		f.rqobjects = append(f.rqcobjects, managedQuota)
 		// Scheduled Pods
 		pods := newTestPods(3, &v1Core.ResourceList{
 			v1Core.ResourceCPU:    resource.MustParse("250m"),

@@ -1073,10 +1073,6 @@ func TestCheckMaxCountJobsCluster(t *testing.T) {
 		},
 		"job count exceeds cluster limit": {
 			claim: &cagipv1.ResourceQuotaClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-claim",
-					Namespace: "namespace-a",
-				},
 				Spec: v1.ResourceList{
 					"count/jobs.batch": resource.MustParse("6"),
 				},
@@ -1084,10 +1080,6 @@ func TestCheckMaxCountJobsCluster(t *testing.T) {
 			maxCountJobsCluster: 10,
 			managedQuotas: []*v1.ResourceQuota{
 				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      utils.ResourceQuotaName,
-						Namespace: "namespace-b",
-					},
 					Spec: v1.ResourceQuotaSpec{
 						Hard: v1.ResourceList{
 							"count/jobs.batch": resource.MustParse("5"),
@@ -1129,44 +1121,6 @@ func TestCheckMaxCountJobsCluster(t *testing.T) {
 					},
 				},
 			},
-			expectMsg: utils.EmptyMsg,
-		},
-		"job count downscale should skip cluster check": {
-			claim: &cagipv1.ResourceQuotaClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "test-claim",
-					Namespace: "namespace-a",
-				},
-				Spec: v1.ResourceList{
-					"count/jobs.batch": resource.MustParse("3"),
-				},
-			},
-			maxCountJobsCluster: 5,
-			managedQuotas: []*v1.ResourceQuota{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      utils.ResourceQuotaName,
-						Namespace: "namespace-a",
-					},
-					Spec: v1.ResourceQuotaSpec{
-						Hard: v1.ResourceList{
-							"count/jobs.batch": resource.MustParse("10"),
-						},
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      utils.ResourceQuotaName,
-						Namespace: "namespace-b",
-					},
-					Spec: v1.ResourceQuotaSpec{
-						Hard: v1.ResourceList{
-							"count/jobs.batch": resource.MustParse("4"),
-						},
-					},
-				},
-			},
-			// Even though 3 + 4 = 7 > 5 (cluster limit), it should pass because it's a downscale from 10 to 3
 			expectMsg: utils.EmptyMsg,
 		},
 	}

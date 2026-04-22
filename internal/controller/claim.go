@@ -401,22 +401,6 @@ func (c *Controller) checkMaxCountJobs(claim *cagipv1.ResourceQuotaClaim, maxCou
 
 // Check max count jobs for the entire cluster
 func (c *Controller) checkMaxCountJobsCluster(claim *cagipv1.ResourceQuotaClaim, maxCountJobsCluster int) string {
-	// Get the existing managed quota to check if this is a downscale
-	existingQuota, err := c.resourceQuotaLister.ResourceQuotas(claim.Namespace).Get(utils.ResourceQuotaName)
-	if err == nil {
-		// If quota exists, check if the claim is reducing the job count (downscale)
-		if existingJobCount, ok := existingQuota.Spec.Hard["count/jobs.batch"]; ok {
-			if claimJobCount, ok := claim.Spec["count/jobs.batch"]; ok {
-				// If new job limit is less than or equal to old job limit, skip cluster check (downscale scenario)
-				if claimJobCount.Value() <= existingJobCount.Value() {
-					klog.V(4).Infof("Skipping cluster job count check for ns %s (downscale: %d -> %d)",
-						claim.Namespace, existingJobCount.Value(), claimJobCount.Value())
-					return utils.EmptyMsg
-				}
-			}
-		}
-	}
-
 	totalJobs := 0
 
 	// Retrieve all ResourceQuotas
@@ -426,12 +410,10 @@ func (c *Controller) checkMaxCountJobsCluster(claim *cagipv1.ResourceQuotaClaim,
 		return "Error retrieving ResourceQuotas"
 	}
 
-	// Sum up the job counts across all quotas, excluding the current namespace
+	// Sum up the job counts across all quotas
 	for _, quota := range managedQuotas {
-		if quota.Namespace != claim.Namespace {
-			if jobCount, ok := quota.Spec.Hard["count/jobs.batch"]; ok {
-				totalJobs += int(jobCount.Value())
-			}
+		if jobCount, ok := quota.Spec.Hard["count/jobs.batch"]; ok {
+			totalJobs += int(jobCount.Value())
 		}
 	}
 
