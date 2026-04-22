@@ -205,8 +205,6 @@ func parseConfigMap(configMap *v1.ConfigMap) (parsed *Config, err error) {
 
 func setKotaryMetrics(kotaryConfig *Config) {
 
-	MaxJobsLimitNSGauge.Set(float64(kotaryConfig.MaxJobsLimitNS))
-	MaxJobsLimitClusterGauge.Set(float64(kotaryConfig.MaxJobsLimitCluster))
 	RatioMaxAllocationCPUGauge.Set(float64(kotaryConfig.RatioMaxAllocationCPU))
 	RatioMaxAllocationMemoryGauge.Set(float64(kotaryConfig.RatioMaxAllocationMemory))
 	RatioOverCommitCPUGauge.Set(float64(kotaryConfig.RatioOverCommitCPU))
@@ -214,4 +212,3 @@ func setKotaryMetrics(kotaryConfig *Config) {
 
 	klog.Infof("Kotary metrics updated from configuration")
 }
-
